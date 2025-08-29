@@ -80,7 +80,8 @@ func ValidateFundEscrowRequest(req *FundEscrowRequest) error {
 func ValidateEscrowStateTransition(currentStatus, newStatus string) error {
 	validTransitions := map[string][]string{
 		"pending":   {"funded", "cancelled"},
-		"funded":    {"released", "disputed", "cancelled"},
+		"funded":    {"delivered", "released", "disputed", "cancelled"},
+		"delivered": {"released", "disputed"},
 		"disputed":  {"released", "refunded", "cancelled"},
 		"released":  {}, // Terminal state
 		"refunded":  {}, // Terminal state
@@ -110,7 +111,8 @@ func ValidateEscrowAction(escrow *Escrow, action string) error {
 
 	allowedActions := map[string][]string{
 		"pending":   {"fund", "cancel"},
-		"funded":    {"release", "dispute", "cancel"},
+		"funded":    {"release", "dispute", "cancel", "deliver"},
+		"delivered": {"release", "dispute"},
 		"disputed":  {"release", "refund", "cancel"},
 		"released":  {},
 		"refunded":  {},

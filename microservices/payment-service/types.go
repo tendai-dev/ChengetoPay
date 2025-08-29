@@ -40,11 +40,12 @@ type Payment struct {
 
 // CreatePaymentRequest represents a request to create a payment
 type CreatePaymentRequest struct {
-	AccountID string                 `json:"account_id"`
-	Provider  string                 `json:"provider"`
-	Method    string                 `json:"method"`
-	Amount    Money                  `json:"amount"`
-	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+	AccountID     string                 `json:"account_id"`
+	Provider      string                 `json:"provider"`
+	PaymentMethod string                 `json:"payment_method"`
+	Amount        Money                  `json:"amount"`
+	Description   string                 `json:"description"`
+	Metadata      map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // ProcessPaymentRequest represents a request to process a payment
@@ -97,21 +98,57 @@ func NewService(repo Repository, logger interface{}) *Service {
 
 // CreatePayment creates a new payment
 func (s *Service) CreatePayment(ctx context.Context, req *CreatePaymentRequest) (*Payment, error) {
-	payment := &Payment{
-		ID:        generateID(),
-		AccountID: req.AccountID,
-		Provider:  req.Provider,
-		Method:    req.Method,
-		Amount:    req.Amount,
-		Currency:  req.Amount.Currency,
-		Status:    "pending",
-		Metadata:  req.Metadata,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+	// Validate request
+	validator := NewPaymentValidator()
+	if err := validator.ValidateCreatePaymentRequest(req); err != nil {
+		return nil, fmt.Errorf("validation failed: %w", err)
 	}
 
+	// Create payment with validation and business logic
+	payment := &Payment{
+		ID:          generateID(),
+		AccountID:   req.AccountID,
+		Amount:      req.Amount,
+		Currency:    req.Amount.Currency,
+		Method:      req.PaymentMethod,
+		Provider:    req.Provider,
+		Status:      "pending",
+		Metadata:    req.Metadata,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+
+	// Add creation metadata
+	if payment.Metadata == nil {
+		payment.Metadata = make(map[string]interface{})
+	}
+	payment.Metadata["created_by"] = "payment-service"
+	payment.Metadata["version"] = "1.0"
+
+	// Calculate initial risk score
+	businessValidator := NewBusinessRuleValidator()
+	riskScore, err := businessValidator.CalculateRiskScore(payment)
+	if err != nil {
+		return nil, fmt.Errorf("failed to calculate risk score: %w", err)
+	}
+	payment.Metadata["risk_score"] = riskScore
+
+	// Validate business rules
+	if err := businessValidator.ValidatePaymentLimits(ctx, payment); err != nil {
+		return nil, fmt.Errorf("business rules validation failed: %w", err)
+	}
+
+	if err := businessValidator.ValidateFraudRules(ctx, payment); err != nil {
+		return nil, fmt.Errorf("fraud validation failed: %w", err)
+	}
+
+	if err := businessValidator.ValidateComplianceRules(ctx, payment); err != nil {
+		return nil, fmt.Errorf("compliance validation failed: %w", err)
+	}
+
+	// Create payment in repository
 	if err := s.repo.CreatePayment(ctx, payment); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create payment: %w", err)
 	}
 
 	return payment, nil
@@ -124,31 +161,14 @@ func (s *Service) GetPayment(ctx context.Context, id string) (*Payment, error) {
 
 // ListPayments lists payments with filters
 func (s *Service) ListPayments(ctx context.Context, filters PaymentFilters) ([]*Payment, error) {
-	return s.repo.ListPayments(ctx, filters)
-}
-
-// ProcessPayment processes a payment
-func (s *Service) ProcessPayment(ctx context.Context, req *ProcessPaymentRequest) error {
-	payment, err := s.repo.GetPayment(ctx, req.PaymentID)
+	payments, err := s.repo.ListPayments(ctx, filters)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// Simulate payment processing
-	payment.Status = "processing"
-	payment.UpdatedAt = time.Now()
-
-	if err := s.repo.UpdatePayment(ctx, payment); err != nil {
-		return err
-	}
-
-	// Simulate successful processing
-	payment.Status = "completed"
-	payment.ExternalRef = generateID()
-	payment.UpdatedAt = time.Now()
-
-	return s.repo.UpdatePayment(ctx, payment)
+	return payments, nil
 }
+
 
 // GetProviders returns available payment providers
 func (s *Service) GetProviders(ctx context.Context) ([]*Provider, error) {

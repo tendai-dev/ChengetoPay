@@ -161,9 +161,18 @@ func (s *Service) ProcessExpiredEscrows(ctx context.Context) error {
 
 // validateReleaseConditions checks if escrow can be released
 func (s *Service) validateReleaseConditions(ctx context.Context, escrow *Escrow) error {
-	// Check if escrow is funded
-	if escrow.Status != "funded" && escrow.Status != "disputed" {
-		return fmt.Errorf("escrow must be funded or disputed to release")
+	// Check if escrow is in releasable state
+	allowedStatuses := []string{"funded", "delivered", "disputed"}
+	statusAllowed := false
+	for _, status := range allowedStatuses {
+		if escrow.Status == status {
+			statusAllowed = true
+			break
+		}
+	}
+	
+	if !statusAllowed {
+		return fmt.Errorf("escrow must be funded, delivered, or disputed to release")
 	}
 
 	// Check if not expired

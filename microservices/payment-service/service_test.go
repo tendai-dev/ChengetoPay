@@ -12,7 +12,7 @@ func TestPaymentService_CreatePayment(t *testing.T) {
 	req := &CreatePaymentRequest{
 		AccountID: "acc_123",
 		Provider:  "stripe",
-		Method:    "card",
+		PaymentMethod: "credit_card",
 		Amount:    FromMinorUnits("USD", 5000), // $50
 		Metadata:  map[string]interface{}{"order_id": "order_123"},
 	}
@@ -43,13 +43,7 @@ func TestPaymentService_ProcessPayment(t *testing.T) {
 	repo := &MockRepository{}
 	service := NewService(repo, nil)
 
-	req := &ProcessPaymentRequest{
-		PaymentID: "payment_123",
-		Provider:  "stripe",
-		Method:    "card",
-	}
-
-	err := service.ProcessPayment(context.Background(), req)
+	err := service.ProcessPayment(context.Background(), "payment_123")
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
@@ -153,7 +147,7 @@ func BenchmarkPaymentService_CreatePayment(b *testing.B) {
 	req := &CreatePaymentRequest{
 		AccountID: "acc_123",
 		Provider:  "stripe",
-		Method:    "card",
+		PaymentMethod: "credit_card",
 		Amount:    FromMinorUnits("USD", 5000),
 		Metadata:  map[string]interface{}{"order_id": "order_123"},
 	}
