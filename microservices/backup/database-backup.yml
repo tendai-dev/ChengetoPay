@@ -1,0 +1,361 @@
+# Database Backup Configuration for Financial Platform
+# Comprehensive backup strategy for PostgreSQL, MongoDB, and Redis
+
+# PostgreSQL Backup Configuration
+postgresql_backup:
+  # Full Database Backup
+  full_backup:
+    schedule: "0 2 * * *"  # Daily at 2 AM
+    retention_days: 30
+    compression: true
+    parallel_jobs: 4
+    backup_dir: "/backups/postgresql/full"
+    
+    # Backup command
+    command: |
+      pg_dump \
+        --host=${POSTGRES_HOST} \
+        --port=${POSTGRES_PORT} \
+        --username=${POSTGRES_USER} \
+        --dbname=${POSTGRES_DB} \
+        --verbose \
+        --compress=9 \
+        --format=custom \
+        --file=${BACKUP_FILE}
+    
+    # Restore command
+    restore_command: |
+      pg_restore \
+        --host=${POSTGRES_HOST} \
+        --port=${POSTGRES_PORT} \
+        --username=${POSTGRES_USER} \
+        --dbname=${POSTGRES_DB} \
+        --verbose \
+        --clean \
+        --if-exists \
+        ${BACKUP_FILE}
+
+  # Incremental Backup (WAL Archiving)
+  incremental_backup:
+    enabled: true
+    wal_archive_dir: "/backups/postgresql/wal"
+    archive_command: |
+      test ! -f ${WAL_ARCHIVE_DIR}/${WAL_FILE} && \
+      cp ${WAL_FILE} ${WAL_ARCHIVE_DIR}/${WAL_FILE}
+    restore_command: |
+      cp ${WAL_ARCHIVE_DIR}/${WAL_FILE} ${WAL_FILE}
+    
+    # Point-in-time recovery
+    pitr_enabled: true
+    recovery_target_time: "2024-01-01 12:00:00"
+    recovery_target_timeline: "latest"
+
+  # Backup Verification
+  verification:
+    enabled: true
+    schedule: "0 4 * * *"  # Daily at 4 AM
+    test_restore: true
+    integrity_check: true
+    
+    # Verification commands
+    verify_command: |
+      pg_restore --list ${BACKUP_FILE} | grep -q "financial_platform"
+    integrity_command: |
+      pg_dump --host=${POSTGRES_HOST} --port=${POSTGRES_PORT} \
+        --username=${POSTGRES_USER} --dbname=${POSTGRES_DB} \
+        --schema-only | grep -q "CREATE TABLE"
+
+# MongoDB Backup Configuration
+mongodb_backup:
+  # Full Database Backup
+  full_backup:
+    schedule: "0 3 * * *"  # Daily at 3 AM
+    retention_days: 30
+    compression: true
+    backup_dir: "/backups/mongodb/full"
+    
+    # Backup command
+    command: |
+      mongodump \
+        --host=${MONGO_HOST} \
+        --port=${MONGO_PORT} \
+        --username=${MONGO_USER} \
+        --password=${MONGO_PASSWORD} \
+        --authenticationDatabase=admin \
+        --db=${MONGO_DB} \
+        --out=${BACKUP_DIR} \
+        --gzip
+    
+    # Restore command
+    restore_command: |
+      mongorestore \
+        --host=${MONGO_HOST} \
+        --port=${MONGO_PORT} \
+        --username=${MONGO_USER} \
+        --password=${MONGO_PASSWORD} \
+        --authenticationDatabase=admin \
+        --db=${MONGO_DB} \
+        --drop \
+        --gzip \
+        ${BACKUP_DIR}
+
+  # Incremental Backup (Oplog)
+  incremental_backup:
+    enabled: true
+    oplog_backup: true
+    oplog_dir: "/backups/mongodb/oplog"
+    
+    # Oplog backup command
+    oplog_command: |
+      mongodump \
+        --host=${MONGO_HOST} \
+        --port=${MONGO_PORT} \
+        --username=${MONGO_USER} \
+        --password=${MONGO_PASSWORD} \
+        --authenticationDatabase=admin \
+        --oplog \
+        --out=${OPLOG_DIR}
+
+  # Backup Verification
+  verification:
+    enabled: true
+    schedule: "0 5 * * *"  # Daily at 5 AM
+    test_restore: true
+    
+    # Verification commands
+    verify_command: |
+      mongorestore --dryRun --gzip ${BACKUP_DIR}
+    integrity_command: |
+      mongo --host=${MONGO_HOST} --port=${MONGO_PORT} \
+        --username=${MONGO_USER} --password=${MONGO_PASSWORD} \
+        --authenticationDatabase=admin --eval="db.stats()"
+
+# Redis Backup Configuration
+redis_backup:
+  # RDB Snapshot Backup
+  rdb_backup:
+    schedule: "0 1 * * *"  # Daily at 1 AM
+    retention_days: 30
+    backup_dir: "/backups/redis/rdb"
+    
+    # Backup command
+    command: |
+      redis-cli -h ${REDIS_HOST} -p ${REDIS_PORT} \
+        -a ${REDIS_PASSWORD} BGSAVE
+      
+      # Wait for save to complete
+      redis-cli -h ${REDIS_HOST} -p ${REDIS_PORT} \
+        -a ${REDIS_PASSWORD} --eval /scripts/wait_for_save.lua
+    
+    # Copy RDB file
+    copy_command: |
+      cp ${REDIS_DATA_DIR}/dump.rdb ${BACKUP_DIR}/dump-$(date +%Y%m%d-%H%M%S).rdb
+
+  # AOF Backup (Append Only File)
+  aof_backup:
+    enabled: true
+    schedule: "*/30 * * * *"  # Every 30 minutes
+    backup_dir: "/backups/redis/aof"
+    
+    # AOF rewrite and backup
+    command: |
+      redis-cli -h ${REDIS_HOST} -p ${REDIS_PORT} \
+        -a ${REDIS_PASSWORD} BGREWRITEAOF
+      
+      cp ${REDIS_DATA_DIR}/appendonly.aof ${BACKUP_DIR}/appendonly-$(date +%Y%m%d-%H%M%S).aof
+
+  # Backup Verification
+  verification:
+    enabled: true
+    schedule: "0 6 * * *"  # Daily at 6 AM
+    
+    # Verification commands
+    verify_command: |
+      redis-check-rdb ${BACKUP_DIR}/dump-$(date +%Y%m%d).rdb
+    integrity_command: |
+      redis-cli -h ${REDIS_HOST} -p ${REDIS_PORT} \
+        -a ${REDIS_PASSWORD} --eval /scripts/verify_backup.lua
+
+# Backup Storage Configuration
+storage:
+  # Local Storage
+  local:
+    enabled: true
+    backup_dir: "/backups"
+    max_size_gb: 1000
+    cleanup_schedule: "0 7 * * *"  # Daily cleanup at 7 AM
+    
+  # Cloud Storage (AWS S3)
+  s3:
+    enabled: true
+    bucket: "financial-platform-backups"
+    region: "us-east-1"
+    prefix: "backups/"
+    encryption: true
+    lifecycle_policy:
+      transition_days: 30
+      expiration_days: 365
+      glacier_days: 90
+    
+    # S3 sync command
+    sync_command: |
+      aws s3 sync ${LOCAL_BACKUP_DIR} s3://${S3_BUCKET}/${S3_PREFIX} \
+        --delete \
+        --storage-class STANDARD_IA \
+        --sse aws:kms \
+        --kms-key-id ${KMS_KEY_ID}
+
+  # Cloud Storage (Google Cloud Storage)
+  gcs:
+    enabled: false
+    bucket: "financial-platform-backups"
+    prefix: "backups/"
+    encryption: true
+    
+    # GCS sync command
+    sync_command: |
+      gsutil -m rsync -d -r ${LOCAL_BACKUP_DIR} gs://${GCS_BUCKET}/${GCS_PREFIX}
+
+# Backup Monitoring and Alerting
+monitoring:
+  # Backup Status Monitoring
+  status_monitoring:
+    enabled: true
+    metrics_endpoint: "/metrics/backup"
+    
+    # Metrics to track
+    metrics:
+      - backup_success_rate
+      - backup_duration_seconds
+      - backup_size_bytes
+      - restore_duration_seconds
+      - verification_success_rate
+    
+  # Backup Alerts
+  alerts:
+    # Failed Backup Alert
+    - name: "BackupFailed"
+      condition: "backup_success_rate < 95"
+      severity: "critical"
+      notification_channels: ["slack", "email", "pagerduty"]
+      
+    # Long Backup Duration Alert
+    - name: "BackupDurationHigh"
+      condition: "backup_duration_seconds > 3600"
+      severity: "warning"
+      notification_channels: ["slack", "email"]
+      
+    # Backup Size Alert
+    - name: "BackupSizeHigh"
+      condition: "backup_size_bytes > 10737418240"  # 10GB
+      severity: "warning"
+      notification_channels: ["slack"]
+      
+    # Verification Failed Alert
+    - name: "BackupVerificationFailed"
+      condition: "verification_success_rate < 100"
+      severity: "critical"
+      notification_channels: ["slack", "email", "pagerduty"]
+
+# Disaster Recovery Configuration
+disaster_recovery:
+  # Recovery Time Objectives (RTO)
+  rto:
+    critical_services: "15 minutes"
+    important_services: "1 hour"
+    standard_services: "4 hours"
+    
+  # Recovery Point Objectives (RPO)
+  rpo:
+    critical_data: "5 minutes"
+    important_data: "1 hour"
+    standard_data: "24 hours"
+    
+  # Recovery Procedures
+  procedures:
+    # Database Recovery
+    database_recovery:
+      - name: "PostgreSQL Recovery"
+        steps:
+          - "Stop affected services"
+          - "Restore from latest backup"
+          - "Apply WAL logs if needed"
+          - "Verify data integrity"
+          - "Start services"
+        estimated_time: "30 minutes"
+        
+      - name: "MongoDB Recovery"
+        steps:
+          - "Stop affected services"
+          - "Restore from latest backup"
+          - "Apply oplog if needed"
+          - "Verify data integrity"
+          - "Start services"
+        estimated_time: "45 minutes"
+        
+      - name: "Redis Recovery"
+        steps:
+          - "Stop affected services"
+          - "Restore RDB snapshot"
+          - "Apply AOF if needed"
+          - "Verify data integrity"
+          - "Start services"
+        estimated_time: "15 minutes"
+    
+    # Service Recovery
+    service_recovery:
+      - name: "API Gateway Recovery"
+        steps:
+          - "Deploy from backup configuration"
+          - "Restore SSL certificates"
+          - "Verify connectivity"
+          - "Update DNS if needed"
+        estimated_time: "10 minutes"
+        
+      - name: "Payment Service Recovery"
+        steps:
+          - "Deploy from backup configuration"
+          - "Restore payment configurations"
+          - "Verify payment processing"
+          - "Test transaction flows"
+        estimated_time: "20 minutes"
+        
+      - name: "Monitoring Recovery"
+        steps:
+          - "Deploy monitoring stack"
+          - "Restore dashboards"
+          - "Verify alerting"
+          - "Test monitoring endpoints"
+        estimated_time: "15 minutes"
+
+# Backup Testing
+testing:
+  # Automated Backup Testing
+  automated_testing:
+    enabled: true
+    schedule: "0 8 * * 0"  # Weekly on Sunday at 8 AM
+    
+    # Test scenarios
+    scenarios:
+      - name: "Full Database Restore Test"
+        description: "Test complete database restoration"
+        frequency: "weekly"
+        
+      - name: "Point-in-Time Recovery Test"
+        description: "Test PITR for PostgreSQL"
+        frequency: "monthly"
+        
+      - name: "Service Configuration Restore Test"
+        description: "Test service configuration restoration"
+        frequency: "weekly"
+        
+      - name: "Cross-Region Recovery Test"
+        description: "Test recovery in different region"
+        frequency: "quarterly"
+    
+    # Test validation
+    validation:
+      - data_integrity_check: true
+      - service_connectivity_test: true
+      - performance_baseline_check: true
+      - security_configuration_check: true

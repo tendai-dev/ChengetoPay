@@ -1,0 +1,375 @@
+# Cross-Region Replication Configuration
+# Multi-region disaster recovery for Financial Platform
+
+# Primary Region Configuration
+primary_region:
+  name: "us-east-1"
+  services:
+    - name: "api-gateway"
+      replication_type: "active-active"
+      health_check_endpoint: "/health"
+      failover_priority: 1
+      
+    - name: "payment-service"
+      replication_type: "active-passive"
+      health_check_endpoint: "/health"
+      failover_priority: 1
+      
+    - name: "escrow-service"
+      replication_type: "active-passive"
+      health_check_endpoint: "/health"
+      failover_priority: 1
+      
+    - name: "database-service"
+      replication_type: "master-slave"
+      health_check_endpoint: "/health"
+      failover_priority: 1
+      
+    - name: "monitoring-service"
+      replication_type: "active-active"
+      health_check_endpoint: "/health"
+      failover_priority: 2
+
+# Secondary Region Configuration
+secondary_regions:
+  - name: "us-west-2"
+    priority: 1
+    services:
+      - name: "api-gateway"
+        replication_type: "active-active"
+        health_check_endpoint: "/health"
+        auto_failover: true
+        
+      - name: "payment-service"
+        replication_type: "passive"
+        health_check_endpoint: "/health"
+        auto_failover: true
+        
+      - name: "escrow-service"
+        replication_type: "passive"
+        health_check_endpoint: "/health"
+        auto_failover: true
+        
+      - name: "database-service"
+        replication_type: "slave"
+        health_check_endpoint: "/health"
+        auto_failover: true
+        
+      - name: "monitoring-service"
+        replication_type: "active-active"
+        health_check_endpoint: "/health"
+        auto_failover: true
+
+  - name: "eu-west-1"
+    priority: 2
+    services:
+      - name: "api-gateway"
+        replication_type: "passive"
+        health_check_endpoint: "/health"
+        auto_failover: false
+        
+      - name: "payment-service"
+        replication_type: "passive"
+        health_check_endpoint: "/health"
+        auto_failover: false
+        
+      - name: "escrow-service"
+        replication_type: "passive"
+        health_check_endpoint: "/health"
+        auto_failover: false
+        
+      - name: "database-service"
+        replication_type: "slave"
+        health_check_endpoint: "/health"
+        auto_failover: false
+        
+      - name: "monitoring-service"
+        replication_type: "passive"
+        health_check_endpoint: "/health"
+        auto_failover: false
+
+# Database Replication Configuration
+database_replication:
+  # PostgreSQL Replication
+  postgresql:
+    primary:
+      host: "postgresql-primary.us-east-1"
+      port: 5432
+      replication_slot: "financial_platform_replica"
+      
+    replicas:
+      - name: "postgresql-replica-us-west-2"
+        host: "postgresql-replica.us-west-2"
+        port: 5432
+        region: "us-west-2"
+        replication_lag_threshold: "30s"
+        auto_promote: true
+        
+      - name: "postgresql-replica-eu-west-1"
+        host: "postgresql-replica.eu-west-1"
+        port: 5432
+        region: "eu-west-1"
+        replication_lag_threshold: "60s"
+        auto_promote: false
+
+  # MongoDB Replication
+  mongodb:
+    primary:
+      host: "mongodb-primary.us-east-1"
+      port: 27017
+      replica_set: "financial-platform"
+      
+    replicas:
+      - name: "mongodb-replica-us-west-2"
+        host: "mongodb-replica.us-west-2"
+        port: 27017
+        region: "us-west-2"
+        replica_set: "financial-platform"
+        auto_promote: true
+        
+      - name: "mongodb-replica-eu-west-1"
+        host: "mongodb-replica.eu-west-1"
+        port: 27017
+        region: "eu-west-1"
+        replica_set: "financial-platform"
+        auto_promote: false
+
+  # Redis Replication
+  redis:
+    primary:
+      host: "redis-primary.us-east-1"
+      port: 6379
+      
+    replicas:
+      - name: "redis-replica-us-west-2"
+        host: "redis-replica.us-west-2"
+        port: 6379
+        region: "us-west-2"
+        auto_promote: true
+        
+      - name: "redis-replica-eu-west-1"
+        host: "redis-replica.eu-west-1"
+        port: 6379
+        region: "eu-west-1"
+        auto_promote: false
+
+# Load Balancer Configuration
+load_balancer:
+  # Global Load Balancer (Route 53 / Cloudflare)
+  global:
+    type: "route53"
+    health_check_interval: 30
+    health_check_timeout: 5
+    health_check_threshold: 3
+    failover_threshold: 2
+    
+    # Health check endpoints
+    health_checks:
+      - path: "/health"
+        port: 8090
+        protocol: "HTTPS"
+        
+      - path: "/api/v1/payment/health"
+        port: 8083
+        protocol: "HTTPS"
+        
+      - path: "/api/v1/escrow/health"
+        port: 8081
+        protocol: "HTTPS"
+
+  # Regional Load Balancers
+  regional:
+    - region: "us-east-1"
+      type: "application-load-balancer"
+      health_check_path: "/health"
+      health_check_port: 8090
+      health_check_protocol: "HTTPS"
+      
+    - region: "us-west-2"
+      type: "application-load-balancer"
+      health_check_path: "/health"
+      health_check_port: 8090
+      health_check_protocol: "HTTPS"
+      
+    - region: "eu-west-1"
+      type: "application-load-balancer"
+      health_check_path: "/health"
+      health_check_port: 8090
+      health_check_protocol: "HTTPS"
+
+# Failover Configuration
+failover:
+  # Automatic Failover
+  automatic:
+    enabled: true
+    health_check_interval: 30
+    failover_threshold: 3
+    recovery_threshold: 2
+    
+    # Failover triggers
+    triggers:
+      - condition: "service_unhealthy"
+        duration: "2m"
+        action: "initiate_failover"
+        
+      - condition: "database_replication_lag"
+        threshold: "60s"
+        action: "switch_to_replica"
+        
+      - condition: "region_unavailable"
+        duration: "5m"
+        action: "failover_to_secondary"
+
+  # Manual Failover
+  manual:
+    enabled: true
+    approval_required: true
+    notification_channels: ["slack", "email", "pagerduty"]
+    
+    # Manual failover procedures
+    procedures:
+      - name: "Emergency Failover"
+        description: "Immediate failover without approval"
+        requires_approval: false
+        notification_channels: ["pagerduty"]
+        
+      - name: "Planned Failover"
+        description: "Scheduled failover with approval"
+        requires_approval: true
+        notification_channels: ["slack", "email"]
+        advance_notice: "24h"
+
+# Data Synchronization
+data_sync:
+  # Real-time Synchronization
+  real_time:
+    enabled: true
+    sync_interval: "5s"
+    
+    # Services with real-time sync
+    services:
+      - name: "payment-service"
+        sync_type: "event-driven"
+        event_bus: "kafka"
+        
+      - name: "escrow-service"
+        sync_type: "event-driven"
+        event_bus: "kafka"
+        
+      - name: "ledger-service"
+        sync_type: "event-driven"
+        event_bus: "kafka"
+
+  # Batch Synchronization
+  batch:
+    enabled: true
+    sync_schedule: "0 */6 * * *"  # Every 6 hours
+    
+    # Services with batch sync
+    services:
+      - name: "compliance-service"
+        sync_type: "batch"
+        batch_size: 1000
+        
+      - name: "reporting-service"
+        sync_type: "batch"
+        batch_size: 5000
+
+# Monitoring and Alerting
+monitoring:
+  # Replication Monitoring
+  replication_monitoring:
+    enabled: true
+    metrics:
+      - replication_lag_seconds
+      - replication_status
+      - failover_status
+      - data_sync_status
+      
+    # Replication alerts
+    alerts:
+      - name: "ReplicationLagHigh"
+        condition: "replication_lag_seconds > 60"
+        severity: "warning"
+        notification_channels: ["slack", "email"]
+        
+      - name: "ReplicationBroken"
+        condition: "replication_status == 'broken'"
+        severity: "critical"
+        notification_channels: ["slack", "email", "pagerduty"]
+        
+      - name: "FailoverInitiated"
+        condition: "failover_status == 'initiated'"
+        severity: "critical"
+        notification_channels: ["slack", "email", "pagerduty"]
+
+  # Health Check Monitoring
+  health_check_monitoring:
+    enabled: true
+    check_interval: 30
+    timeout: 10
+    
+    # Health check endpoints
+    endpoints:
+      - name: "api-gateway"
+        url: "https://api-gateway.us-east-1/health"
+        expected_status: 200
+        
+      - name: "payment-service"
+        url: "https://payment-service.us-east-1/health"
+        expected_status: 200
+        
+      - name: "escrow-service"
+        url: "https://escrow-service.us-east-1/health"
+        expected_status: 200
+
+# Disaster Recovery Testing
+testing:
+  # Automated DR Testing
+  automated_testing:
+    enabled: true
+    schedule: "0 2 * * 0"  # Weekly on Sunday at 2 AM
+    
+    # Test scenarios
+    scenarios:
+      - name: "Failover Test"
+        description: "Test automatic failover to secondary region"
+        frequency: "weekly"
+        duration: "30m"
+        
+      - name: "Data Sync Test"
+        description: "Test data synchronization between regions"
+        frequency: "weekly"
+        duration: "15m"
+        
+      - name: "Recovery Test"
+        description: "Test recovery procedures"
+        frequency: "monthly"
+        duration: "1h"
+        
+      - name: "Cross-Region Latency Test"
+        description: "Test latency between regions"
+        frequency: "daily"
+        duration: "5m"
+
+  # Manual DR Testing
+  manual_testing:
+    enabled: true
+    approval_required: true
+    
+    # Manual test procedures
+    procedures:
+      - name: "Full DR Test"
+        description: "Complete disaster recovery test"
+        estimated_duration: "2h"
+        impact: "minimal"
+        
+      - name: "Failover Simulation"
+        description: "Simulate failover without actual switch"
+        estimated_duration: "1h"
+        impact: "none"
+        
+      - name: "Data Integrity Test"
+        description: "Verify data integrity across regions"
+        estimated_duration: "30m"
+        impact: "none"

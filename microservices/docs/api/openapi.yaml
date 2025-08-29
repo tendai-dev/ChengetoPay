@@ -1,0 +1,73 @@
+openapi: 3.1.0
+info:
+  title: Financial Platform API
+  description: Comprehensive API for Financial Platform with 37 microservices
+  version: 1.0.0
+  contact:
+    name: Financial Platform API Team
+    email: api@financialplatform.com
+
+servers:
+  - url: https://api.financialplatform.com
+    description: Production API Server
+  - url: http://localhost:8090
+    description: Local Development Server
+
+paths:
+  /api/v1/payment/process:
+    post:
+      summary: Process Payment
+      description: Process a new payment transaction
+      tags: [Payments]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+      responses:
+        '200':
+          description: Payment processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+
+components:
+  schemas:
+    PaymentRequest:
+      type: object
+      required: [amount, currency, payment_method]
+      properties:
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.01
+          description: Payment amount
+        currency:
+          type: string
+          enum: [USD, EUR, GBP, JPY]
+          description: Payment currency
+        payment_method:
+          type: string
+          enum: [card, bank_transfer, crypto]
+          description: Payment method
+
+    PaymentResponse:
+      type: object
+      properties:
+        transaction_id:
+          type: string
+          format: uuid
+          description: Unique transaction ID
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+          description: Payment status
+        amount:
+          type: number
+          format: decimal
+          description: Payment amount
+        currency:
+          type: string
+          description: Payment currency

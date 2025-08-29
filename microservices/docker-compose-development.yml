@@ -1,0 +1,170 @@
+version: '3.8'
+
+services:
+  # API Documentation
+  swagger-ui:
+    image: swaggerapi/swagger-ui:latest
+    container_name: swagger-ui
+    ports:
+      - "8080:8080"
+    environment:
+      SWAGGER_JSON: /app/openapi.yaml
+    volumes:
+      - ./docs/api/openapi.yaml:/app/openapi.yaml
+    networks:
+      - development_network
+
+  redoc:
+    image: redocly/redoc:latest
+    container_name: redoc
+    ports:
+      - "8081:80"
+    environment:
+      SPEC_URL: /app/openapi.yaml
+    volumes:
+      - ./docs/api/openapi.yaml:/app/openapi.yaml
+    networks:
+      - development_network
+
+  # Developer Portal
+  developer-portal:
+    image: financial-platform/developer-portal:latest
+    container_name: developer-portal
+    ports:
+      - "8082:3000"
+    volumes:
+      - ./portal/config:/app/config
+      - ./portal/content:/app/content
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+    networks:
+      - development_network
+
+  # Sandbox Environment
+  sandbox-api:
+    image: financial-platform/sandbox-api:latest
+    container_name: sandbox-api
+    ports:
+      - "8083:8090"
+    volumes:
+      - ./sandbox/config:/app/config
+      - ./sandbox/data:/app/data
+    environment:
+      - ENVIRONMENT=sandbox
+      - DATABASE_URL=postgresql://sandbox_user:sandbox_password@sandbox-postgresql:5432/financial_platform_sandbox
+    networks:
+      - development_network
+    depends_on:
+      - sandbox-postgresql
+      - sandbox-mongodb
+      - sandbox-redis
+
+  sandbox-postgresql:
+    image: postgres:15-alpine
+    container_name: sandbox-postgresql
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_DB=financial_platform_sandbox
+      - POSTGRES_USER=sandbox_user
+      - POSTGRES_PASSWORD=sandbox_password
+    volumes:
+      - sandbox_postgresql_data:/var/lib/postgresql/data
+    networks:
+      - development_network
+
+  sandbox-mongodb:
+    image: mongo:7.0
+    container_name: sandbox-mongodb
+    ports:
+      - "27018:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=financial_platform_sandbox
+    volumes:
+      - sandbox_mongodb_data:/data/db
+    networks:
+      - development_network
+
+  sandbox-redis:
+    image: redis:7.2-alpine
+    container_name: sandbox-redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - sandbox_redis_data:/data
+    networks:
+      - development_network
+
+  # Mock Services
+  mock-stripe:
+    image: financial-platform/mock-stripe:latest
+    container_name: mock-stripe
+    ports:
+      - "8084:3000"
+    environment:
+      - MOCK_MODE=true
+    networks:
+      - development_network
+
+  mock-paypal:
+    image: financial-platform/mock-paypal:latest
+    container_name: mock-paypal
+    ports:
+      - "8085:3000"
+    environment:
+      - MOCK_MODE=true
+    networks:
+      - development_network
+
+  # Testing Tools
+  postman:
+    image: postman/newman:latest
+    container_name: postman
+    volumes:
+      - ./tests/postman:/etc/newman
+    networks:
+      - development_network
+
+  k6:
+    image: grafana/k6:latest
+    container_name: k6
+    ports:
+      - "8086:6565"
+    volumes:
+      - ./tests/k6:/scripts
+    networks:
+      - development_network
+
+  # Monitoring
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - development_network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - development_network
+
+volumes:
+  sandbox_postgresql_data:
+  sandbox_mongodb_data:
+  sandbox_redis_data:
+  grafana_data:
+
+networks:
+  development_network:
+    driver: bridge

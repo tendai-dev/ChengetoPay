@@ -1,0 +1,20 @@
+# Backup Monitoring Configuration
+metrics:
+  - backup_success_rate
+  - backup_duration_seconds
+  - backup_size_bytes
+  - restore_duration_seconds
+  - verification_success_rate
+
+alerts:
+  - name: BackupFailed
+    condition: backup_success_rate < 95
+    severity: critical
+    
+  - name: BackupDurationHigh
+    condition: backup_duration_seconds > 3600
+    severity: warning
+    
+  - name: BackupSizeHigh
+    condition: backup_size_bytes > 10737418240
+    severity: warning

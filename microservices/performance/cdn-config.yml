@@ -1,0 +1,257 @@
+# CDN Configuration for Financial Platform
+# Content Delivery Network optimization and global performance
+
+# CDN Provider Configuration
+cdn_providers:
+  # AWS CloudFront
+  cloudfront:
+    enabled: true
+    distribution_id: "E1234567890ABCD"
+    domain_name: "d1234567890abcd.cloudfront.net"
+    price_class: "PriceClass_100"  # Use only North America and Europe
+    
+    # Origins
+    origins:
+      - id: "api-gateway"
+        domain_name: "api-gateway.financialplatform.com"
+        origin_path: ""
+        protocol: "https-only"
+        ssl_protocols: ["TLSv1.2", "TLSv1.3"]
+        
+      - id: "static-assets"
+        domain_name: "static.financialplatform.com"
+        origin_path: "/assets"
+        protocol: "https-only"
+        ssl_protocols: ["TLSv1.2", "TLSv1.3"]
+        
+      - id: "documentation"
+        domain_name: "docs.financialplatform.com"
+        origin_path: ""
+        protocol: "https-only"
+        ssl_protocols: ["TLSv1.2", "TLSv1.3"]
+
+  # Cloudflare
+  cloudflare:
+    enabled: false
+    zone_id: "1234567890abcdef"
+    domain: "financialplatform.com"
+    
+    # Page Rules
+    page_rules:
+      - url: "api.financialplatform.com/*"
+        settings:
+          cache_level: "cache_everything"
+          edge_cache_ttl: 300
+          browser_cache_ttl: 0
+
+# Cache Configuration
+cache_configuration:
+  # Static Assets
+  static_assets:
+    cache_behavior: "cache_everything"
+    ttl: 86400  # 24 hours
+    compression: true
+    gzip: true
+    brotli: true
+    
+    # File types
+    file_types:
+      - "*.css"
+      - "*.js"
+      - "*.png"
+      - "*.jpg"
+      - "*.jpeg"
+      - "*.gif"
+      - "*.svg"
+      - "*.ico"
+      - "*.woff"
+      - "*.woff2"
+      - "*.ttf"
+      - "*.eot"
+
+  # API Responses
+  api_responses:
+    cache_behavior: "cache_by_headers"
+    ttl: 300  # 5 minutes
+    compression: true
+    gzip: true
+    
+    # Cacheable endpoints
+    cacheable_endpoints:
+      - path: "/api/v1/config/*"
+        ttl: 3600  # 1 hour
+        
+      - path: "/api/v1/rates/*"
+        ttl: 1800  # 30 minutes
+        
+      - path: "/api/v1/currencies/*"
+        ttl: 86400  # 24 hours
+        
+      - path: "/api/v1/countries/*"
+        ttl: 604800  # 1 week
+
+  # Documentation
+  documentation:
+    cache_behavior: "cache_everything"
+    ttl: 3600  # 1 hour
+    compression: true
+    gzip: true
+
+# Geographic Distribution
+geographic_distribution:
+  # Edge Locations
+  edge_locations:
+    north_america:
+      - "us-east-1"
+      - "us-west-2"
+      - "us-central-1"
+      - "ca-central-1"
+      
+    europe:
+      - "eu-west-1"
+      - "eu-central-1"
+      - "eu-north-1"
+      - "eu-south-1"
+      
+    asia_pacific:
+      - "ap-southeast-1"
+      - "ap-northeast-1"
+      - "ap-south-1"
+      
+    south_america:
+      - "sa-east-1"
+      
+    africa:
+      - "af-south-1"
+
+  # Geographic Restrictions
+  restrictions:
+    enabled: false
+    allowed_countries:
+      - "US"
+      - "CA"
+      - "GB"
+      - "DE"
+      - "FR"
+      - "AU"
+      - "JP"
+      - "SG"
+
+# Performance Optimization
+performance_optimization:
+  # Compression
+  compression:
+    gzip: true
+    brotli: true
+    minimum_size: 1024  # 1KB
+    
+  # Image Optimization
+  image_optimization:
+    enabled: true
+    formats:
+      - "webp"
+      - "avif"
+    quality: 85
+    resize: true
+    
+  # HTTP/2
+  http2:
+    enabled: true
+    server_push: true
+    
+  # HTTP/3
+  http3:
+    enabled: false  # Enable when widely supported
+    
+  # Preloading
+  preloading:
+    enabled: true
+    resources:
+      - "/api/v1/config"
+      - "/api/v1/currencies"
+      - "/assets/main.css"
+      - "/assets/main.js"
+
+# Security Configuration
+security:
+  # HTTPS
+  https:
+    enabled: true
+    redirect_http: true
+    hsts: true
+    hsts_max_age: 31536000  # 1 year
+    
+  # WAF Integration
+  waf:
+    enabled: true
+    rules:
+      - name: "Rate Limiting"
+        priority: 1
+        action: "block"
+        conditions:
+          - field: "rate_limit"
+            operator: "gt"
+            value: 1000
+            
+      - name: "SQL Injection"
+        priority: 2
+        action: "block"
+        conditions:
+          - field: "sql_injection"
+            operator: "contains"
+            
+      - name: "XSS Protection"
+        priority: 3
+        action: "block"
+        conditions:
+          - field: "xss"
+            operator: "contains"
+
+# Monitoring and Analytics
+monitoring:
+  # Real-time Metrics
+  real_time_metrics:
+    enabled: true
+    metrics:
+      - "requests_per_second"
+      - "cache_hit_ratio"
+      - "origin_latency"
+      - "error_rate"
+      - "bandwidth_usage"
+      
+  # Alerts
+  alerts:
+    - name: "HighErrorRate"
+      condition: "error_rate > 5"
+      severity: "warning"
+      notification_channels: ["slack", "email"]
+      
+    - name: "LowCacheHitRatio"
+      condition: "cache_hit_ratio < 80"
+      severity: "warning"
+      notification_channels: ["slack"]
+      
+    - name: "HighLatency"
+      condition: "origin_latency > 1000"
+      severity: "warning"
+      notification_channels: ["slack", "email"]
+
+# Cost Optimization
+cost_optimization:
+  # Price Classes
+  price_classes:
+    cloudfront:
+      current: "PriceClass_100"  # North America and Europe
+      optimization: "PriceClass_200"  # Add Asia Pacific
+      
+  # Cache Optimization
+  cache_optimization:
+    ttl_optimization: true
+    compression_optimization: true
+    geographic_optimization: true
+    
+  # Bandwidth Optimization
+  bandwidth_optimization:
+    image_compression: true
+    minification: true
+    bundling: true

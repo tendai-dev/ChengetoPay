@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  # Network monitoring with Snort
+  snort:
+    image: snort/snort:latest
+    container_name: snort-ids
+    network_mode: host
+    volumes:
+      - ./snort-config:/etc/snort
+      - ./logs:/var/log/snort
+    command: snort -A console -q -c /etc/snort/snort.conf -i eth0
+    restart: unless-stopped
+
+  # Network traffic analyzer
+  ntopng:
+    image: ntop/ntopng:latest
+    container_name: ntopng
+    ports:
+      - "3002:3000"
+    volumes:
+      - ntopng_data:/var/lib/ntopng
+    environment:
+      - NTOPNG_USER=admin
+      - NTOPNG_PASSWORD=admin123
+    restart: unless-stopped
+
+  # Network security scanner
+  nmap:
+    image: uzyexe/nmap:latest
+    container_name: nmap-scanner
+    volumes:
+      - ./scan-results:/results
+    command: nmap -sS -sV -O -p- 10.0.0.0/8 -oA /results/network-scan
+    restart: "no"
+
+volumes:
+  ntopng_data:

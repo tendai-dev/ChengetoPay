@@ -1,0 +1,58 @@
+# Security Policies for Financial Platform
+
+# Password Policy
+password_policy:
+  min_length: 12
+  require_uppercase: true
+  require_lowercase: true
+  require_numbers: true
+  require_special_chars: true
+  max_age_days: 90
+  history_count: 5
+  lockout_attempts: 5
+  lockout_duration_minutes: 30
+
+# Session Policy
+session_policy:
+  max_session_duration_hours: 8
+  idle_timeout_minutes: 30
+  concurrent_sessions: 3
+  secure_cookies: true
+  http_only_cookies: true
+  same_site_policy: "strict"
+
+# API Security Policy
+api_security_policy:
+  rate_limit_per_minute: 100
+  max_request_size_mb: 10
+  require_ssl: true
+  require_api_key: true
+  require_authentication: true
+  audit_all_requests: true
+
+# Data Protection Policy
+data_protection_policy:
+  encryption_at_rest: true
+  encryption_in_transit: true
+  encryption_algorithm: "AES-256"
+  key_rotation_days: 90
+  data_retention_days: 2555  # 7 years
+  secure_deletion: true
+
+# Network Security Policy
+network_security_policy:
+  require_vpn: false
+  allowed_ports: [22, 443, 8090, 8081-8119]
+  blocked_ports: [21, 23, 25, 110, 143]
+  require_firewall: true
+  require_ids: true
+  require_ips: true
+
+# Compliance Policy
+compliance_policy:
+  pci_dss: true
+  sox: true
+  gdpr: true
+  hipaa: false
+  audit_logging: true
+  data_classification: true

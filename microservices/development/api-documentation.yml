@@ -1,0 +1,717 @@
+# API Documentation Configuration for Financial Platform
+# Comprehensive API documentation with OpenAPI/Swagger specifications
+
+# API Documentation Framework
+api_documentation:
+  # OpenAPI Specification
+  openapi:
+    version: "3.1.0"
+    title: "Financial Platform API"
+    description: "Comprehensive API for Financial Platform with 37 microservices"
+    version: "1.0.0"
+    contact:
+      name: "Financial Platform API Team"
+      email: "api@financialplatform.com"
+      url: "https://financialplatform.com/api"
+    license:
+      name: "MIT"
+      url: "https://opensource.org/licenses/MIT"
+    
+    # Servers
+    servers:
+      - url: "https://api.financialplatform.com"
+        description: "Production API Server"
+      - url: "https://staging-api.financialplatform.com"
+        description: "Staging API Server"
+      - url: "https://dev-api.financialplatform.com"
+        description: "Development API Server"
+      - url: "http://localhost:8090"
+        description: "Local Development Server"
+
+# API Gateway Documentation
+api_gateway_documentation:
+  # Base Path
+  base_path: "/api/v1"
+  
+  # Authentication
+  authentication:
+    - name: "API Key"
+      type: "apiKey"
+      in: "header"
+      name: "X-API-Key"
+      description: "API key for authentication"
+      
+    - name: "Bearer Token"
+      type: "http"
+      scheme: "bearer"
+      bearerFormat: "JWT"
+      description: "JWT token for authentication"
+      
+    - name: "OAuth2"
+      type: "oauth2"
+      flows:
+        authorizationCode:
+          authorizationUrl: "https://auth.financialplatform.com/oauth/authorize"
+          tokenUrl: "https://auth.financialplatform.com/oauth/token"
+          scopes:
+            read: "Read access"
+            write: "Write access"
+            admin: "Admin access"
+
+# Service Documentation
+service_documentation:
+  # Payment Service
+  payment_service:
+    base_path: "/api/v1/payment"
+    description: "Payment processing and management"
+    
+    # Endpoints
+    endpoints:
+      - path: "/process"
+        method: "POST"
+        summary: "Process Payment"
+        description: "Process a new payment transaction"
+        tags: ["Payments"]
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentRequest"
+        responses:
+          "200":
+            description: "Payment processed successfully"
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/PaymentResponse"
+          "400":
+            description: "Invalid payment request"
+          "401":
+            description: "Unauthorized"
+          "500":
+            description: "Internal server error"
+            
+      - path: "/status/{transaction_id}"
+        method: "GET"
+        summary: "Get Payment Status"
+        description: "Get the status of a payment transaction"
+        tags: ["Payments"]
+        parameters:
+          - name: "transaction_id"
+            in: "path"
+            required: true
+            schema:
+              type: "string"
+            description: "Payment transaction ID"
+        responses:
+          "200":
+            description: "Payment status retrieved successfully"
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/PaymentStatus"
+          "404":
+            description: "Payment not found"
+          "500":
+            description: "Internal server error"
+
+  # Escrow Service
+  escrow_service:
+    base_path: "/api/v1/escrow"
+    description: "Escrow account management and transactions"
+    
+    # Endpoints
+    endpoints:
+      - path: "/create"
+        method: "POST"
+        summary: "Create Escrow Account"
+        description: "Create a new escrow account"
+        tags: ["Escrow"]
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EscrowRequest"
+        responses:
+          "201":
+            description: "Escrow account created successfully"
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/EscrowResponse"
+          "400":
+            description: "Invalid escrow request"
+          "500":
+            description: "Internal server error"
+            
+      - path: "/release/{escrow_id}"
+        method: "POST"
+        summary: "Release Escrow Funds"
+        description: "Release funds from escrow account"
+        tags: ["Escrow"]
+        parameters:
+          - name: "escrow_id"
+            in: "path"
+            required: true
+            schema:
+              type: "string"
+            description: "Escrow account ID"
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EscrowReleaseRequest"
+        responses:
+          "200":
+            description: "Escrow funds released successfully"
+          "400":
+            description: "Invalid release request"
+          "404":
+            description: "Escrow account not found"
+          "500":
+            description: "Internal server error"
+
+  # User Service
+  user_service:
+    base_path: "/api/v1/users"
+    description: "User management and authentication"
+    
+    # Endpoints
+    endpoints:
+      - path: "/register"
+        method: "POST"
+        summary: "Register User"
+        description: "Register a new user account"
+        tags: ["Users"]
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserRegistrationRequest"
+        responses:
+          "201":
+            description: "User registered successfully"
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/UserResponse"
+          "400":
+            description: "Invalid registration request"
+          "409":
+            description: "User already exists"
+          "500":
+            description: "Internal server error"
+            
+      - path: "/login"
+        method: "POST"
+        summary: "User Login"
+        description: "Authenticate user and return access token"
+        tags: ["Users"]
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserLoginRequest"
+        responses:
+          "200":
+            description: "Login successful"
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/LoginResponse"
+          "401":
+            description: "Invalid credentials"
+          "500":
+            description: "Internal server error"
+
+# Data Models
+data_models:
+  # Payment Models
+  payment_models:
+    PaymentRequest:
+      type: "object"
+      required: ["amount", "currency", "payment_method"]
+      properties:
+        amount:
+          type: "number"
+          format: "decimal"
+          minimum: 0.01
+          description: "Payment amount"
+        currency:
+          type: "string"
+          enum: ["USD", "EUR", "GBP", "JPY"]
+          description: "Payment currency"
+        payment_method:
+          type: "string"
+          enum: ["card", "bank_transfer", "crypto"]
+          description: "Payment method"
+        description:
+          type: "string"
+          maxLength: 255
+          description: "Payment description"
+        metadata:
+          type: "object"
+          description: "Additional payment metadata"
+          
+    PaymentResponse:
+      type: "object"
+      properties:
+        transaction_id:
+          type: "string"
+          format: "uuid"
+          description: "Unique transaction ID"
+        status:
+          type: "string"
+          enum: ["pending", "processing", "completed", "failed"]
+          description: "Payment status"
+        amount:
+          type: "number"
+          format: "decimal"
+          description: "Payment amount"
+        currency:
+          type: "string"
+          description: "Payment currency"
+        created_at:
+          type: "string"
+          format: "date-time"
+          description: "Transaction creation timestamp"
+        updated_at:
+          type: "string"
+          format: "date-time"
+          description: "Transaction update timestamp"
+          
+    PaymentStatus:
+      type: "object"
+      properties:
+        transaction_id:
+          type: "string"
+          format: "uuid"
+          description: "Unique transaction ID"
+        status:
+          type: "string"
+          enum: ["pending", "processing", "completed", "failed"]
+          description: "Payment status"
+        amount:
+          type: "number"
+          format: "decimal"
+          description: "Payment amount"
+        currency:
+          type: "string"
+          description: "Payment currency"
+        created_at:
+          type: "string"
+          format: "date-time"
+          description: "Transaction creation timestamp"
+        updated_at:
+          type: "string"
+          format: "date-time"
+          description: "Transaction update timestamp"
+
+  # Escrow Models
+  escrow_models:
+    EscrowRequest:
+      type: "object"
+      required: ["amount", "currency", "buyer_id", "seller_id"]
+      properties:
+        amount:
+          type: "number"
+          format: "decimal"
+          minimum: 0.01
+          description: "Escrow amount"
+        currency:
+          type: "string"
+          enum: ["USD", "EUR", "GBP", "JPY"]
+          description: "Escrow currency"
+        buyer_id:
+          type: "string"
+          format: "uuid"
+          description: "Buyer user ID"
+        seller_id:
+          type: "string"
+          format: "uuid"
+          description: "Seller user ID"
+        terms:
+          type: "string"
+          maxLength: 1000
+          description: "Escrow terms and conditions"
+        expiry_date:
+          type: "string"
+          format: "date-time"
+          description: "Escrow expiry date"
+          
+    EscrowResponse:
+      type: "object"
+      properties:
+        escrow_id:
+          type: "string"
+          format: "uuid"
+          description: "Unique escrow ID"
+        amount:
+          type: "number"
+          format: "decimal"
+          description: "Escrow amount"
+        currency:
+          type: "string"
+          description: "Escrow currency"
+        status:
+          type: "string"
+          enum: ["pending", "funded", "released", "refunded", "expired"]
+          description: "Escrow status"
+        buyer_id:
+          type: "string"
+          format: "uuid"
+          description: "Buyer user ID"
+        seller_id:
+          type: "string"
+          format: "uuid"
+          description: "Seller user ID"
+        created_at:
+          type: "string"
+          format: "date-time"
+          description: "Escrow creation timestamp"
+        expiry_date:
+          type: "string"
+          format: "date-time"
+          description: "Escrow expiry date"
+          
+    EscrowReleaseRequest:
+      type: "object"
+      required: ["reason"]
+      properties:
+        reason:
+          type: "string"
+          enum: ["delivery_confirmed", "dispute_resolved", "mutual_agreement"]
+          description: "Reason for escrow release"
+        notes:
+          type: "string"
+          maxLength: 500
+          description: "Additional notes"
+
+  # User Models
+  user_models:
+    UserRegistrationRequest:
+      type: "object"
+      required: ["email", "password", "first_name", "last_name"]
+      properties:
+        email:
+          type: "string"
+          format: "email"
+          description: "User email address"
+        password:
+          type: "string"
+          minLength: 8
+          description: "User password"
+        first_name:
+          type: "string"
+          minLength: 1
+          maxLength: 50
+          description: "User first name"
+        last_name:
+          type: "string"
+          minLength: 1
+          maxLength: 50
+          description: "User last name"
+        phone:
+          type: "string"
+          pattern: "^\\+?[1-9]\\d{1,14}$"
+          description: "User phone number"
+        date_of_birth:
+          type: "string"
+          format: "date"
+          description: "User date of birth"
+          
+    UserResponse:
+      type: "object"
+      properties:
+        user_id:
+          type: "string"
+          format: "uuid"
+          description: "Unique user ID"
+        email:
+          type: "string"
+          format: "email"
+          description: "User email address"
+        first_name:
+          type: "string"
+          description: "User first name"
+        last_name:
+          type: "string"
+          description: "User last name"
+        phone:
+          type: "string"
+          description: "User phone number"
+        status:
+          type: "string"
+          enum: ["active", "inactive", "suspended", "pending_verification"]
+          description: "User account status"
+        created_at:
+          type: "string"
+          format: "date-time"
+          description: "User creation timestamp"
+        updated_at:
+          type: "string"
+          format: "date-time"
+          description: "User update timestamp"
+          
+    UserLoginRequest:
+      type: "object"
+      required: ["email", "password"]
+      properties:
+        email:
+          type: "string"
+          format: "email"
+          description: "User email address"
+        password:
+          type: "string"
+          description: "User password"
+        remember_me:
+          type: "boolean"
+          default: false
+          description: "Remember user session"
+          
+    LoginResponse:
+      type: "object"
+      properties:
+        access_token:
+          type: "string"
+          description: "JWT access token"
+        refresh_token:
+          type: "string"
+          description: "JWT refresh token"
+        token_type:
+          type: "string"
+          default: "Bearer"
+          description: "Token type"
+        expires_in:
+          type: "integer"
+          description: "Token expiration time in seconds"
+        user:
+          $ref: "#/components/schemas/UserResponse"
+
+# Error Responses
+error_responses:
+  # Common Error Responses
+  common_errors:
+    BadRequest:
+      description: "Bad Request"
+      content:
+        application/json:
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+                description: "Error message"
+              code:
+                type: "string"
+                description: "Error code"
+              details:
+                type: "object"
+                description: "Error details"
+                
+    Unauthorized:
+      description: "Unauthorized"
+      content:
+        application/json:
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+                description: "Error message"
+              code:
+                type: "string"
+                description: "Error code"
+                
+    Forbidden:
+      description: "Forbidden"
+      content:
+        application/json:
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+                description: "Error message"
+              code:
+                type: "string"
+                description: "Error code"
+                
+    NotFound:
+      description: "Not Found"
+      content:
+        application/json:
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+                description: "Error message"
+              code:
+                type: "string"
+                description: "Error code"
+                
+    InternalServerError:
+      description: "Internal Server Error"
+      content:
+        application/json:
+          schema:
+            type: "object"
+            properties:
+              error:
+                type: "string"
+                description: "Error message"
+              code:
+                type: "string"
+                description: "Error code"
+              request_id:
+                type: "string"
+                description: "Request ID for tracking"
+
+# Documentation Generation
+documentation_generation:
+  # Swagger UI Configuration
+  swagger_ui:
+    enabled: true
+    path: "/docs"
+    title: "Financial Platform API Documentation"
+    description: "Comprehensive API documentation for Financial Platform"
+    version: "1.0.0"
+    contact:
+      name: "API Team"
+      email: "api@financialplatform.com"
+    license:
+      name: "MIT"
+      url: "https://opensource.org/licenses/MIT"
+      
+  # ReDoc Configuration
+  redoc:
+    enabled: true
+    path: "/redoc"
+    title: "Financial Platform API Reference"
+    description: "Interactive API reference documentation"
+    
+  # Postman Collection
+  postman:
+    enabled: true
+    path: "/postman"
+    collection_name: "Financial Platform API"
+    description: "Postman collection for Financial Platform API"
+    
+  # OpenAPI Specification
+  openapi_spec:
+    enabled: true
+    path: "/openapi.json"
+    format: "json"
+    version: "3.1.0"
+
+# Documentation Hosting
+documentation_hosting:
+  # Static Site Generation
+  static_site:
+    enabled: true
+    generator: "hugo"
+    theme: "docuapi"
+    output_dir: "docs/public"
+    
+  # GitHub Pages
+  github_pages:
+    enabled: true
+    repository: "financial-platform/api-docs"
+    branch: "gh-pages"
+    domain: "docs.financialplatform.com"
+    
+  # Documentation CDN
+  cdn:
+    enabled: true
+    provider: "cloudfront"
+    domain: "docs.financialplatform.com"
+    cache_headers:
+      - "Cache-Control: public, max-age=3600"
+      - "Content-Type: text/html"
+
+# Documentation Monitoring
+documentation_monitoring:
+  # Documentation Health Checks
+  health_checks:
+    enabled: true
+    endpoints:
+      - path: "/docs"
+        expected_status: 200
+        timeout: 5
+      - path: "/redoc"
+        expected_status: 200
+        timeout: 5
+      - path: "/openapi.json"
+        expected_status: 200
+        timeout: 5
+        
+  # Documentation Analytics
+  analytics:
+    enabled: true
+    provider: "google_analytics"
+    tracking_id: "GA-XXXXXXXXX"
+    events:
+      - name: "documentation_view"
+        category: "documentation"
+        action: "view"
+      - name: "api_test"
+        category: "documentation"
+        action: "test"
+      - name: "code_copy"
+        category: "documentation"
+        action: "copy"
+
+# Documentation Maintenance
+documentation_maintenance:
+  # Automated Updates
+  automated_updates:
+    enabled: true
+    schedule: "0 2 * * *"  # Daily at 2 AM
+    
+    # Update Sources
+    update_sources:
+      - name: "code_changes"
+        description: "Update documentation from code changes"
+        trigger: "git_push"
+      - name: "api_changes"
+        description: "Update documentation from API changes"
+        trigger: "api_deployment"
+      - name: "manual_updates"
+        description: "Manual documentation updates"
+        trigger: "manual"
+        
+  # Documentation Validation
+  validation:
+    enabled: true
+    
+    # Validation Rules
+    validation_rules:
+      - name: "openapi_spec_valid"
+        description: "Validate OpenAPI specification"
+        rule: "openapi_validator"
+      - name: "examples_valid"
+        description: "Validate API examples"
+        rule: "example_validator"
+      - name: "links_valid"
+        description: "Validate documentation links"
+        rule: "link_validator"
+      - name: "spelling_check"
+        description: "Check documentation spelling"
+        rule: "spell_checker"
+        
+  # Documentation Backup
+  backup:
+    enabled: true
+    schedule: "0 3 * * *"  # Daily at 3 AM
+    retention: "30 days"
+    storage:
+      type: "s3"
+      bucket: "financial-platform-docs-backup"
+      region: "us-east-1"
+      encryption: true

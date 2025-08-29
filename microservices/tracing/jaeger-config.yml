@@ -1,0 +1,101 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jaeger-config
+  namespace: financial-platform
+data:
+  jaeger.yaml: |
+    sampling:
+      default_strategy:
+        type: probabilistic
+        param: 0.1
+      per_operation_strategies:
+        - operation: /api/v1/payment/process
+          type: probabilistic
+          param: 1.0
+        - operation: /api/v1/escrow/create
+          type: probabilistic
+          param: 1.0
+        - operation: /api/v1/ledger/transaction
+          type: probabilistic
+          param: 1.0
+    
+    storage:
+      type: elasticsearch
+      options:
+        es:
+          server_urls: http://elasticsearch:9200
+          index_prefix: jaeger
+          username: jaeger
+          password: jaeger-password
+    
+    dependencies:
+      menu_enabled: true
+    
+    menu:
+      - label: "Financial Platform"
+        url: "https://grafana.financialplatform.com"
+      - label: "Prometheus"
+        url: "http://prometheus:9090"
+      - label: "Alert Manager"
+        url: "http://alertmanager:9093"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+  namespace: financial-platform
+spec:
+  replicas: 1
+  selector:
+    match_labels:
+      app: jaeger
+  template:
+    metadata:
+      labels:
+        app: jaeger
+    spec:
+      containers:
+      - name: jaeger
+        image: jaegertracing/all-in-one:latest
+        ports:
+        - containerPort: 16686
+        - containerPort: 14268
+        - containerPort: 14250
+        env:
+        - name: COLLECTOR_OTLP_ENABLED
+          value: "true"
+        - name: SPAN_STORAGE_TYPE
+          value: "elasticsearch"
+        - name: ES_SERVER_URLS
+          value: "http://elasticsearch:9200"
+        - name: ES_USERNAME
+          value: "jaeger"
+        - name: ES_PASSWORD
+          value: "jaeger-password"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+  namespace: financial-platform
+spec:
+  selector:
+    app: jaeger
+  ports:
+  - name: ui
+    port: 16686
+    targetPort: 16686
+  - name: collector
+    port: 14268
+    targetPort: 14268
+  - name: grpc
+    port: 14250
+    targetPort: 14250

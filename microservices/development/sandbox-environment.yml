@@ -1,0 +1,587 @@
+# Sandbox Environment Configuration for Financial Platform
+# Comprehensive sandbox environment for development and testing
+
+# Sandbox Environment Framework
+sandbox_environment:
+  # Environment Configuration
+  environment_config:
+    name: "Financial Platform Sandbox"
+    description: "Complete sandbox environment for development and testing"
+    version: "1.0.0"
+    base_url: "https://sandbox-api.financialplatform.com"
+    admin_url: "https://sandbox-admin.financialplatform.com"
+    
+    # Environment Features
+    features:
+      - name: "isolated_data"
+        description: "Isolated test data"
+        enabled: true
+        
+      - name: "mock_services"
+        description: "Mock external services"
+        enabled: true
+        
+      - name: "test_data_generation"
+        description: "Automated test data generation"
+        enabled: true
+        
+      - name: "api_testing"
+        description: "API testing tools"
+        enabled: true
+        
+      - name: "performance_testing"
+        description: "Performance testing capabilities"
+        enabled: true
+        
+      - name: "security_testing"
+        description: "Security testing tools"
+        enabled: true
+
+# Sandbox Infrastructure
+sandbox_infrastructure:
+  # Container Orchestration
+  container_orchestration:
+    platform: "kubernetes"
+    namespace: "sandbox"
+    replicas: 1
+    
+    # Resource Limits
+    resource_limits:
+      cpu: "2"
+      memory: "4Gi"
+      storage: "100Gi"
+      
+    # Auto-scaling
+    auto_scaling:
+      enabled: true
+      min_replicas: 1
+      max_replicas: 5
+      target_cpu_utilization: 70
+
+  # Database Configuration
+  database_config:
+    # PostgreSQL Sandbox
+    postgresql:
+      enabled: true
+      version: "15"
+      database: "financial_platform_sandbox"
+      username: "sandbox_user"
+      password: "sandbox_password"
+      
+      # Test Data
+      test_data:
+        enabled: true
+        tables:
+          - name: "users"
+            record_count: 1000
+            data_type: "synthetic"
+          - name: "transactions"
+            record_count: 5000
+            data_type: "synthetic"
+          - name: "payments"
+            record_count: 3000
+            data_type: "synthetic"
+          - name: "escrow_accounts"
+            record_count: 500
+            data_type: "synthetic"
+
+    # MongoDB Sandbox
+    mongodb:
+      enabled: true
+      version: "7.0"
+      database: "financial_platform_sandbox"
+      
+      # Test Collections
+      test_collections:
+        - name: "user_profiles"
+          document_count: 1000
+          data_type: "synthetic"
+        - name: "transaction_logs"
+          document_count: 10000
+          data_type: "synthetic"
+        - name: "audit_events"
+          document_count: 5000
+          data_type: "synthetic"
+
+    # Redis Sandbox
+    redis:
+      enabled: true
+      version: "7.2"
+      database: 0
+      
+      # Test Data
+      test_data:
+        enabled: true
+        keys:
+          - name: "session_data"
+            count: 100
+            ttl: 3600
+          - name: "cache_data"
+            count: 500
+            ttl: 1800
+
+# Mock Services
+mock_services:
+  # Payment Gateway Mocks
+  payment_gateway_mocks:
+    - name: "stripe_mock"
+      description: "Mock Stripe payment gateway"
+      endpoint: "/mock/stripe"
+      responses:
+        - scenario: "successful_payment"
+          status: 200
+          response:
+            id: "pi_mock_123456789"
+            status: "succeeded"
+            amount: 1000
+            currency: "usd"
+        - scenario: "failed_payment"
+          status: 402
+          response:
+            error:
+              type: "card_error"
+              message: "Your card was declined"
+        - scenario: "insufficient_funds"
+          status: 402
+          response:
+            error:
+              type: "card_error"
+              message: "Insufficient funds"
+              
+    - name: "paypal_mock"
+      description: "Mock PayPal payment gateway"
+      endpoint: "/mock/paypal"
+      responses:
+        - scenario: "successful_payment"
+          status: 200
+          response:
+            id: "PAY-MOCK-123456789"
+            state: "approved"
+            amount: "10.00"
+            currency: "USD"
+        - scenario: "failed_payment"
+          status: 400
+          response:
+            error: "Payment failed"
+
+  # Banking API Mocks
+  banking_api_mocks:
+    - name: "plaid_mock"
+      description: "Mock Plaid banking API"
+      endpoint: "/mock/plaid"
+      responses:
+        - scenario: "account_info"
+          status: 200
+          response:
+            accounts:
+              - account_id: "mock_account_123"
+                name: "Checking Account"
+                type: "depository"
+                subtype: "checking"
+                balances:
+                  available: 1000.00
+                  current: 1000.00
+        - scenario: "transaction_sync"
+          status: 200
+          response:
+            added:
+              - transaction_id: "mock_transaction_123"
+                amount: 50.00
+                date: "2024-01-15"
+                name: "Test Transaction"
+
+  # KYC/AML Mocks
+  kyc_aml_mocks:
+    - name: "jumio_mock"
+      description: "Mock Jumio KYC service"
+      endpoint: "/mock/jumio"
+      responses:
+        - scenario: "successful_verification"
+          status: 200
+          response:
+            verification_id: "mock_verification_123"
+            status: "APPROVED_VERIFIED"
+            identity_verification:
+              status: "APPROVED_VERIFIED"
+        - scenario: "failed_verification"
+          status: 200
+          response:
+            verification_id: "mock_verification_456"
+            status: "DENIED_FRAUD"
+            identity_verification:
+              status: "DENIED_FRAUD"
+
+# Test Data Generation
+test_data_generation:
+  # Data Generators
+  data_generators:
+    - name: "user_generator"
+      description: "Generate synthetic user data"
+      type: "synthetic"
+      fields:
+        - name: "user_id"
+          type: "uuid"
+          generator: "uuid"
+        - name: "email"
+          type: "email"
+          generator: "faker"
+          format: "user@example.com"
+        - name: "first_name"
+          type: "string"
+          generator: "faker"
+          format: "firstName"
+        - name: "last_name"
+          type: "string"
+          generator: "faker"
+          format: "lastName"
+        - name: "phone"
+          type: "string"
+          generator: "faker"
+          format: "phoneNumber"
+        - name: "date_of_birth"
+          type: "date"
+          generator: "faker"
+          format: "dateOfBirth"
+          
+    - name: "transaction_generator"
+      description: "Generate synthetic transaction data"
+      type: "synthetic"
+      fields:
+        - name: "transaction_id"
+          type: "uuid"
+          generator: "uuid"
+        - name: "user_id"
+          type: "uuid"
+          generator: "reference"
+          reference: "users.user_id"
+        - name: "amount"
+          type: "decimal"
+          generator: "random"
+          min: 1.00
+          max: 10000.00
+        - name: "currency"
+          type: "enum"
+          generator: "random"
+          values: ["USD", "EUR", "GBP", "JPY"]
+        - name: "status"
+          type: "enum"
+          generator: "random"
+          values: ["pending", "completed", "failed"]
+        - name: "created_at"
+          type: "datetime"
+          generator: "faker"
+          format: "recentDateTime"
+
+    - name: "payment_generator"
+      description: "Generate synthetic payment data"
+      type: "synthetic"
+      fields:
+        - name: "payment_id"
+          type: "uuid"
+          generator: "uuid"
+        - name: "transaction_id"
+          type: "uuid"
+          generator: "reference"
+          reference: "transactions.transaction_id"
+        - name: "payment_method"
+          type: "enum"
+          generator: "random"
+          values: ["card", "bank_transfer", "crypto"]
+        - name: "gateway"
+          type: "enum"
+          generator: "random"
+          values: ["stripe", "paypal", "square"]
+        - name: "gateway_transaction_id"
+          type: "string"
+          generator: "faker"
+          format: "uuid"
+
+# API Testing Tools
+api_testing_tools:
+  # Testing Framework
+  testing_framework:
+    - name: "postman"
+      description: "Postman collection for API testing"
+      enabled: true
+      collection_url: "/postman/sandbox-collection.json"
+      
+    - name: "insomnia"
+      description: "Insomnia collection for API testing"
+      enabled: true
+      collection_url: "/insomnia/sandbox-collection.json"
+      
+    - name: "curl_examples"
+      description: "cURL examples for API testing"
+      enabled: true
+      examples_url: "/docs/sandbox/curl-examples"
+
+  # Automated Testing
+  automated_testing:
+    - name: "unit_tests"
+      description: "Unit tests for individual services"
+      framework: "go test"
+      coverage_threshold: 80
+      
+    - name: "integration_tests"
+      description: "Integration tests for service interactions"
+      framework: "testcontainers"
+      timeout: 300
+      
+    - name: "api_tests"
+      description: "API endpoint tests"
+      framework: "rest-assured"
+      parallel_execution: true
+      
+    - name: "load_tests"
+      description: "Load testing for performance validation"
+      framework: "k6"
+      scenarios:
+        - name: "payment_processing"
+          virtual_users: 100
+          duration: "5m"
+        - name: "user_registration"
+          virtual_users: 50
+          duration: "3m"
+
+# Performance Testing
+performance_testing:
+  # Load Testing
+  load_testing:
+    enabled: true
+    
+    # Test Scenarios
+    scenarios:
+      - name: "normal_load"
+        description: "Normal load testing"
+        virtual_users: 100
+        duration: "10m"
+        ramp_up: "2m"
+        
+      - name: "peak_load"
+        description: "Peak load testing"
+        virtual_users: 500
+        duration: "15m"
+        ramp_up: "5m"
+        
+      - name: "stress_test"
+        description: "Stress testing"
+        virtual_users: 1000
+        duration: "20m"
+        ramp_up: "10m"
+        
+      - name: "spike_test"
+        description: "Spike testing"
+        virtual_users: 2000
+        duration: "5m"
+        ramp_up: "30s"
+
+  # Performance Monitoring
+  performance_monitoring:
+    enabled: true
+    
+    # Metrics
+    metrics:
+      - name: "response_time"
+        description: "API response time"
+        threshold: "500ms"
+        
+      - name: "throughput"
+        description: "Requests per second"
+        threshold: "1000 rps"
+        
+      - name: "error_rate"
+        description: "Error rate percentage"
+        threshold: "1%"
+        
+      - name: "cpu_usage"
+        description: "CPU usage"
+        threshold: "80%"
+        
+      - name: "memory_usage"
+        description: "Memory usage"
+        threshold: "80%"
+
+# Security Testing
+security_testing:
+  # Security Scanners
+  security_scanners:
+    - name: "owasp_zap"
+      description: "OWASP ZAP security scanner"
+      enabled: true
+      scan_type: "active"
+      target_url: "https://sandbox-api.financialplatform.com"
+      
+    - name: "sonarqube"
+      description: "SonarQube code quality and security"
+      enabled: true
+      quality_gate: "strict"
+      
+    - name: "trivy"
+      description: "Trivy vulnerability scanner"
+      enabled: true
+      scan_type: "container"
+      
+    - name: "bandit"
+      description: "Bandit Python security linter"
+      enabled: true
+      confidence_level: "high"
+
+  # Penetration Testing
+  penetration_testing:
+    enabled: true
+    
+    # Test Types
+    test_types:
+      - name: "api_security"
+        description: "API security testing"
+        tools: ["burp_suite", "postman", "custom_scripts"]
+        
+      - name: "authentication_testing"
+        description: "Authentication and authorization testing"
+        tools: ["custom_scripts", "oauth_testing"]
+        
+      - name: "data_validation"
+        description: "Input validation testing"
+        tools: ["custom_scripts", "sqlmap"]
+        
+      - name: "encryption_testing"
+        description: "Encryption and key management testing"
+        tools: ["custom_scripts", "ssl_testing"]
+
+# Sandbox Management
+sandbox_management:
+  # Environment Management
+  environment_management:
+    - name: "environment_reset"
+      description: "Reset sandbox environment to clean state"
+      schedule: "0 2 * * *"  # Daily at 2 AM
+      actions:
+        - "clear_test_data"
+        - "regenerate_mock_data"
+        - "reset_database"
+        - "clear_caches"
+        
+    - name: "data_backup"
+      description: "Backup sandbox data"
+      schedule: "0 3 * * *"  # Daily at 3 AM
+      retention: "7 days"
+      
+    - name: "health_check"
+      description: "Sandbox health check"
+      schedule: "*/15 * * * *"  # Every 15 minutes
+      checks:
+        - "api_availability"
+        - "database_connectivity"
+        - "mock_service_health"
+        - "resource_usage"
+
+  # Access Control
+  access_control:
+    - name: "developer_access"
+      description: "Developer access to sandbox"
+      permissions:
+        - "read_api_docs"
+        - "execute_api_tests"
+        - "view_test_data"
+        - "generate_api_keys"
+        
+    - name: "admin_access"
+      description: "Admin access to sandbox"
+      permissions:
+        - "all_developer_permissions"
+        - "manage_test_data"
+        - "configure_mock_services"
+        - "monitor_performance"
+        - "manage_users"
+
+# Sandbox Monitoring
+sandbox_monitoring:
+  # Health Monitoring
+  health_monitoring:
+    enabled: true
+    
+    # Health Checks
+    health_checks:
+      - name: "api_health"
+        endpoint: "/health"
+        interval: "30s"
+        timeout: "5s"
+        
+      - name: "database_health"
+        endpoint: "/health/database"
+        interval: "1m"
+        timeout: "10s"
+        
+      - name: "mock_service_health"
+        endpoint: "/health/mocks"
+        interval: "1m"
+        timeout: "10s"
+        
+      - name: "resource_health"
+        endpoint: "/health/resources"
+        interval: "2m"
+        timeout: "15s"
+
+  # Alerting
+  alerting:
+    enabled: true
+    
+    # Alert Rules
+    alert_rules:
+      - name: "api_unavailable"
+        condition: "api_health == false"
+        severity: "critical"
+        notification: "immediate"
+        
+      - name: "high_error_rate"
+        condition: "error_rate > 5%"
+        severity: "warning"
+        notification: "5 minutes"
+        
+      - name: "high_resource_usage"
+        condition: "cpu_usage > 90% or memory_usage > 90%"
+        severity: "warning"
+        notification: "5 minutes"
+        
+      - name: "mock_service_failure"
+        condition: "mock_service_health == false"
+        severity: "warning"
+        notification: "10 minutes"
+
+# Sandbox Documentation
+sandbox_documentation:
+  # User Guides
+  user_guides:
+    - name: "getting_started"
+      description: "Getting started with sandbox"
+      url: "/docs/sandbox/getting-started"
+      
+    - name: "api_testing"
+      description: "API testing guide"
+      url: "/docs/sandbox/api-testing"
+      
+    - name: "test_data"
+      description: "Test data guide"
+      url: "/docs/sandbox/test-data"
+      
+    - name: "mock_services"
+      description: "Mock services guide"
+      url: "/docs/sandbox/mock-services"
+      
+    - name: "troubleshooting"
+      description: "Troubleshooting guide"
+      url: "/docs/sandbox/troubleshooting"
+
+  # API Reference
+  api_reference:
+    - name: "sandbox_api_docs"
+      description: "Sandbox API documentation"
+      url: "/docs/sandbox/api"
+      
+    - name: "mock_api_docs"
+      description: "Mock services API documentation"
+      url: "/docs/sandbox/mock-api"
+      
+    - name: "test_data_api"
+      description: "Test data generation API"
+      url: "/docs/sandbox/test-data-api"

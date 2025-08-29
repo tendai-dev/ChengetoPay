@@ -1,0 +1,426 @@
+# Auto-Scaling Configuration for Financial Platform
+# Horizontal and vertical scaling strategies for microservices
+
+# Horizontal Pod Autoscaler (HPA)
+horizontal_pod_autoscaler:
+  # API Gateway HPA
+  api_gateway:
+    enabled: true
+    min_replicas: 3
+    max_replicas: 20
+    target_cpu_utilization_percentage: 70
+    target_memory_utilization_percentage: 80
+    
+    # Custom metrics
+    custom_metrics:
+      - name: "requests_per_second"
+        target_average_value: 1000
+        type: "Pods"
+        
+      - name: "response_time_p95"
+        target_average_value: 200
+        type: "Pods"
+        
+      - name: "error_rate"
+        target_average_value: 5
+        type: "Pods"
+
+  # Payment Service HPA
+  payment_service:
+    enabled: true
+    min_replicas: 5
+    max_replicas: 50
+    target_cpu_utilization_percentage: 75
+    target_memory_utilization_percentage: 80
+    
+    # Custom metrics
+    custom_metrics:
+      - name: "payment_requests_per_second"
+        target_average_value: 500
+        type: "Pods"
+        
+      - name: "payment_processing_time"
+        target_average_value: 1000
+        type: "Pods"
+        
+      - name: "payment_success_rate"
+        target_average_value: 95
+        type: "Pods"
+
+  # Escrow Service HPA
+  escrow_service:
+    enabled: true
+    min_replicas: 3
+    max_replicas: 30
+    target_cpu_utilization_percentage: 70
+    target_memory_utilization_percentage: 75
+    
+    # Custom metrics
+    custom_metrics:
+      - name: "escrow_requests_per_second"
+        target_average_value: 200
+        type: "Pods"
+        
+      - name: "escrow_processing_time"
+        target_average_value: 2000
+        type: "Pods"
+
+  # Database Service HPA
+  database_service:
+    enabled: true
+    min_replicas: 2
+    max_replicas: 10
+    target_cpu_utilization_percentage: 60
+    target_memory_utilization_percentage: 70
+    
+    # Custom metrics
+    custom_metrics:
+      - name: "database_connections"
+        target_average_value: 100
+        type: "Pods"
+        
+      - name: "query_response_time"
+        target_average_value: 100
+        type: "Pods"
+
+# Vertical Pod Autoscaler (VPA)
+vertical_pod_autoscaler:
+  # API Gateway VPA
+  api_gateway:
+    enabled: true
+    mode: "Auto"
+    min_allowed:
+      cpu: "100m"
+      memory: "128Mi"
+    max_allowed:
+      cpu: "2"
+      memory: "2Gi"
+    target_cpu_percentile: 90
+    target_memory_percentile: 90
+
+  # Payment Service VPA
+  payment_service:
+    enabled: true
+    mode: "Auto"
+    min_allowed:
+      cpu: "200m"
+      memory: "256Mi"
+    max_allowed:
+      cpu: "4"
+      memory: "4Gi"
+    target_cpu_percentile: 90
+    target_memory_percentile: 90
+
+  # Escrow Service VPA
+  escrow_service:
+    enabled: true
+    mode: "Auto"
+    min_allowed:
+      cpu: "150m"
+      memory: "192Mi"
+    max_allowed:
+      cpu: "3"
+      memory: "3Gi"
+    target_cpu_percentile: 90
+    target_memory_percentile: 90
+
+# Cluster Autoscaler
+cluster_autoscaler:
+  enabled: true
+  
+  # Node Groups
+  node_groups:
+    # General Purpose Nodes
+    general_purpose:
+      min_size: 3
+      max_size: 20
+      desired_size: 5
+      instance_type: "t3.medium"
+      spot_instances: false
+      
+      # Scaling policies
+      scaling_policies:
+        - name: "cpu_based_scaling"
+          metric: "CPUUtilization"
+          threshold: 70
+          cooldown: 300
+          
+        - name: "memory_based_scaling"
+          metric: "MemoryUtilization"
+          threshold: 80
+          cooldown: 300
+
+    # Compute Optimized Nodes
+    compute_optimized:
+      min_size: 2
+      max_size: 15
+      desired_size: 3
+      instance_type: "c5.large"
+      spot_instances: true
+      
+      # Scaling policies
+      scaling_policies:
+        - name: "cpu_intensive_scaling"
+          metric: "CPUUtilization"
+          threshold: 80
+          cooldown: 300
+
+    # Memory Optimized Nodes
+    memory_optimized:
+      min_size: 2
+      max_size: 10
+      desired_size: 3
+      instance_type: "r5.large"
+      spot_instances: true
+      
+      # Scaling policies
+      scaling_policies:
+        - name: "memory_intensive_scaling"
+          metric: "MemoryUtilization"
+          threshold: 85
+          cooldown: 300
+
+# Database Scaling
+database_scaling:
+  # PostgreSQL Scaling
+  postgresql:
+    enabled: true
+    
+    # Read Replicas
+    read_replicas:
+      min_replicas: 2
+      max_replicas: 10
+      scaling_metric: "connections"
+      scaling_threshold: 80
+      
+    # Connection Pool Scaling
+    connection_pool:
+      min_connections: 10
+      max_connections: 100
+      scaling_metric: "active_connections"
+      scaling_threshold: 70
+
+  # MongoDB Scaling
+  mongodb:
+    enabled: true
+    
+    # Replica Set Scaling
+    replica_set:
+      min_replicas: 3
+      max_replicas: 9
+      scaling_metric: "operations_per_second"
+      scaling_threshold: 1000
+      
+    # Sharding
+    sharding:
+      enabled: true
+      shard_key: "user_id"
+      number_of_shards: 4
+
+  # Redis Scaling
+  redis:
+    enabled: true
+    
+    # Cluster Scaling
+    cluster:
+      min_nodes: 3
+      max_nodes: 12
+      scaling_metric: "memory_usage"
+      scaling_threshold: 80
+      
+    # Sentinel Scaling
+    sentinel:
+      min_sentinels: 3
+      max_sentinels: 5
+      scaling_metric: "quorum_health"
+      scaling_threshold: 2
+
+# Load Balancer Scaling
+load_balancer_scaling:
+  # Application Load Balancer
+  alb:
+    enabled: true
+    
+    # Target Group Scaling
+    target_groups:
+      - name: "api-gateway-tg"
+        min_capacity: 3
+        max_capacity: 20
+        scaling_metric: "request_count"
+        scaling_threshold: 1000
+        
+      - name: "payment-service-tg"
+        min_capacity: 5
+        max_capacity: 50
+        scaling_metric: "request_count"
+        scaling_threshold: 500
+        
+      - name: "escrow-service-tg"
+        min_capacity: 3
+        max_capacity: 30
+        scaling_metric: "request_count"
+        scaling_threshold: 200
+
+# Queue Scaling
+queue_scaling:
+  # RabbitMQ Scaling
+  rabbitmq:
+    enabled: true
+    
+    # Queue Scaling
+    queues:
+      - name: "payment_queue"
+        min_consumers: 5
+        max_consumers: 50
+        scaling_metric: "queue_length"
+        scaling_threshold: 100
+        
+      - name: "escrow_queue"
+        min_consumers: 3
+        max_consumers: 30
+        scaling_metric: "queue_length"
+        scaling_threshold: 50
+        
+      - name: "notification_queue"
+        min_consumers: 2
+        max_consumers: 20
+        scaling_metric: "queue_length"
+        scaling_threshold: 25
+
+# Scaling Policies
+scaling_policies:
+  # Scale Up Policies
+  scale_up:
+    # CPU-based scaling
+    cpu_based:
+      metric: "CPUUtilization"
+      threshold: 70
+      period: 300
+      evaluation_periods: 2
+      cooldown: 300
+      
+    # Memory-based scaling
+    memory_based:
+      metric: "MemoryUtilization"
+      threshold: 80
+      period: 300
+      evaluation_periods: 2
+      cooldown: 300
+      
+    # Request-based scaling
+    request_based:
+      metric: "RequestCount"
+      threshold: 1000
+      period: 60
+      evaluation_periods: 2
+      cooldown: 300
+
+  # Scale Down Policies
+  scale_down:
+    # CPU-based scaling down
+    cpu_based:
+      metric: "CPUUtilization"
+      threshold: 30
+      period: 300
+      evaluation_periods: 3
+      cooldown: 600
+      
+    # Memory-based scaling down
+    memory_based:
+      metric: "MemoryUtilization"
+      threshold: 40
+      period: 300
+      evaluation_periods: 3
+      cooldown: 600
+      
+    # Request-based scaling down
+    request_based:
+      metric: "RequestCount"
+      threshold: 100
+      period: 300
+      evaluation_periods: 3
+      cooldown: 600
+
+# Predictive Scaling
+predictive_scaling:
+  enabled: true
+  
+  # Historical Data Analysis
+  historical_analysis:
+    data_retention_days: 30
+    analysis_frequency: "hourly"
+    
+  # Machine Learning Models
+  ml_models:
+    - name: "traffic_prediction"
+      type: "time_series"
+      features: ["hour", "day_of_week", "month", "holiday"]
+      prediction_horizon: "24h"
+      
+    - name: "resource_prediction"
+      type: "regression"
+      features: ["cpu_usage", "memory_usage", "request_count"]
+      prediction_horizon: "1h"
+
+# Cost Optimization
+cost_optimization:
+  # Spot Instance Usage
+  spot_instances:
+    enabled: true
+    max_spot_percentage: 50
+    fallback_to_on_demand: true
+    
+  # Reserved Instances
+  reserved_instances:
+    enabled: true
+    coverage_percentage: 70
+    term_length: "1_year"
+    
+  # Auto Scaling Optimization
+  auto_scaling_optimization:
+    enabled: true
+    strategies:
+      - name: "right_sizing"
+        description: "Optimize instance sizes based on usage"
+        
+      - name: "schedule_based_scaling"
+        description: "Scale based on known traffic patterns"
+        
+      - name: "cost_based_scaling"
+        description: "Consider cost when making scaling decisions"
+
+# Monitoring and Alerts
+monitoring:
+  # Scaling Metrics
+  scaling_metrics:
+    enabled: true
+    metrics:
+      - "current_replicas"
+      - "desired_replicas"
+      - "cpu_utilization"
+      - "memory_utilization"
+      - "request_count"
+      - "response_time"
+      - "error_rate"
+      
+  # Scaling Alerts
+  scaling_alerts:
+    - name: "HighScalingActivity"
+      condition: "scale_up_events > 10 in 1h"
+      severity: "warning"
+      notification_channels: ["slack", "email"]
+      
+    - name: "ScalingFailure"
+      condition: "scaling_failures > 0"
+      severity: "critical"
+      notification_channels: ["slack", "email", "pagerduty"]
+      
+    - name: "ResourceExhaustion"
+      condition: "cpu_utilization > 90 or memory_utilization > 90"
+      severity: "critical"
+      notification_channels: ["slack", "email", "pagerduty"]
+      
+    - name: "OverScaling"
+      condition: "current_replicas == max_replicas"
+      severity: "warning"
+      notification_channels: ["slack", "email"]

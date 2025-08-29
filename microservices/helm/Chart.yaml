@@ -1,0 +1,50 @@
+apiVersion: v2
+name: financial-platform
+description: A Helm chart for Financial Platform Microservices
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - financial
+  - microservices
+  - payments
+  - banking
+home: https://github.com/your-org/financial-platform
+sources:
+  - https://github.com/your-org/financial-platform
+maintainers:
+  - name: Financial Platform Team
+    email: team@financial-platform.com
+dependencies:
+  - name: postgresql
+    version: 12.x.x
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+  - name: mongodb
+    version: 13.x.x
+    repository: https://charts.bitnami.com/bitnami
+    condition: mongodb.enabled
+  - name: redis
+    version: 17.x.x
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled
+  - name: rabbitmq
+    version: 11.x.x
+    repository: https://charts.bitnami.com/bitnami
+    condition: rabbitmq.enabled
+  - name: prometheus
+    version: 25.x.x
+    repository: https://prometheus-community.github.io/helm-charts
+    condition: prometheus.enabled
+  - name: grafana
+    version: 7.x.x
+    repository: https://grafana.github.io/helm-charts
+    condition: grafana.enabled
+  - name: vault
+    version: 0.24.x
+    repository: https://helm.releases.hashicorp.com
+    condition: vault.enabled
+  - name: consul
+    version: 1.x.x
+    repository: https://helm.releases.hashicorp.com
+    condition: consul.enabled

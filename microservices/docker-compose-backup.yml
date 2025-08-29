@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  # Backup Scheduler
+  backup-scheduler:
+    image: alpine:latest
+    container_name: backup-scheduler
+    volumes:
+      - ./backups:/backups
+      - ./scripts:/scripts
+    environment:
+      - POSTGRES_HOST=postgresql
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=financial_platform
+      - MONGO_HOST=mongodb
+      - MONGO_PORT=27017
+      - MONGO_USER=mongo
+      - MONGO_PASSWORD=mongo
+      - MONGO_DB=financial_platform
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=redis
+    command: |
+      sh -c "
+        echo '0 2 * * * /scripts/postgresql-backup.sh' > /etc/crontabs/root
+        echo '0 3 * * * /scripts/mongodb-backup.sh' >> /etc/crontabs/root
+        echo '0 1 * * * /scripts/redis-backup.sh' >> /etc/crontabs/root
+        crond -f
+      "
+    restart: unless-stopped
+
+  # Backup Verification
+  backup-verification:
+    image: alpine:latest
+    container_name: backup-verification
+    volumes:
+      - ./backups:/backups
+      - ./monitoring:/monitoring
+    environment:
+      - POSTGRES_HOST=postgresql
+      - MONGO_HOST=mongodb
+      - REDIS_HOST=redis
+    command: |
+      sh -c "
+        echo '0 4 * * * /monitoring/backup-health-check.sh' > /etc/crontabs/root
+        crond -f
+      "
+    restart: unless-stopped
+
+  # Data Archival
+  data-archival:
+    image: alpine:latest
+    container_name: data-archival
+    volumes:
+      - ./archival:/archival
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=us-east-1
+    command: |
+      sh -c "
+        echo '0 1 * * * /archival/archival-process.sh transactions 90' > /etc/crontabs/root
+        echo '0 2 1 */3 * /archival/archival-process.sh users 365' >> /etc/crontabs/root
+        crond -f
+      "
+    restart: unless-stopped
+
+volumes:
+  backup_data:

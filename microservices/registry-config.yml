@@ -1,0 +1,58 @@
+# Docker Registry Configuration
+version: '3.8'
+
+services:
+  # Docker Registry with UI
+  registry:
+    image: registry:2
+    container_name: docker-registry
+    ports:
+      - "5000:5000"
+    environment:
+      REGISTRY_STORAGE_FILESYSTEM_MAXTHREADS: 100
+      REGISTRY_STORAGE_DELETE_ENABLED: true
+      REGISTRY_STORAGE_CACHE_BLOBDESCRIPTOR: inmemory
+      REGISTRY_HTTP_ADDR: 0.0.0.0:5000
+      REGISTRY_HTTP_HOST: http://localhost:5000
+    volumes:
+      - registry_data:/var/lib/registry
+      - ./registry-config.yml:/etc/docker/registry/config.yml
+    networks:
+      - registry_network
+
+  # Registry UI
+  registry-ui:
+    image: joxit/docker-registry-ui:latest
+    container_name: registry-ui
+    ports:
+      - "8080:80"
+    environment:
+      REGISTRY_URL: http://registry:5000
+      DELETE_IMAGES: true
+      REGISTRY_TITLE: Financial Platform Registry
+    depends_on:
+      - registry
+    networks:
+      - registry_network
+
+  # Registry Garbage Collection
+  registry-gc:
+    image: registry:2
+    container_name: registry-gc
+    command: ["garbage-collect", "/etc/docker/registry/config.yml"]
+    volumes:
+      - registry_data:/var/lib/registry
+      - ./registry-config.yml:/etc/docker/registry/config.yml
+    depends_on:
+      - registry
+    networks:
+      - registry_network
+    profiles:
+      - maintenance
+
+volumes:
+  registry_data:
+
+networks:
+  registry_network:
+    driver: bridge

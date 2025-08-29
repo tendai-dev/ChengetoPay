@@ -1,0 +1,273 @@
+# Network Security Configuration
+# Firewall rules and network policies for Financial Platform
+
+# Firewall Rules
+firewall_rules:
+  # Inbound rules
+  inbound:
+    - name: "API Gateway HTTPS"
+      port: 8090
+      protocol: "tcp"
+      source: "0.0.0.0/0"
+      action: "allow"
+      description: "API Gateway HTTPS access"
+    
+    - name: "Health Check Endpoints"
+      port: "8081-8119"
+      protocol: "tcp"
+      source: "10.0.0.0/8"
+      action: "allow"
+      description: "Internal health check access"
+    
+    - name: "Database Access"
+      port: 5432
+      protocol: "tcp"
+      source: "10.0.0.0/8"
+      action: "allow"
+      description: "PostgreSQL database access"
+    
+    - name: "MongoDB Access"
+      port: 27017
+      protocol: "tcp"
+      source: "10.0.0.0/8"
+      action: "allow"
+      description: "MongoDB database access"
+    
+    - name: "Redis Access"
+      port: 6379
+      protocol: "tcp"
+      source: "10.0.0.0/8"
+      action: "allow"
+      description: "Redis cache access"
+    
+    - name: "RabbitMQ Access"
+      port: 5672
+      protocol: "tcp"
+      source: "10.0.0.0/8"
+      action: "allow"
+      description: "RabbitMQ message queue access"
+    
+    - name: "Monitoring Access"
+      port: "9090,3000"
+      protocol: "tcp"
+      source: "10.0.0.0/8"
+      action: "allow"
+      description: "Prometheus and Grafana access"
+    
+    - name: "Vault Access"
+      port: 8200
+      protocol: "tcp"
+      source: "10.0.0.0/8"
+      action: "allow"
+      description: "HashiCorp Vault access"
+    
+    - name: "Consul Access"
+      port: "8500,8600"
+      protocol: "tcp"
+      source: "10.0.0.0/8"
+      action: "allow"
+      description: "Consul service discovery access"
+
+  # Outbound rules
+  outbound:
+    - name: "HTTPS Internet Access"
+      port: 443
+      protocol: "tcp"
+      destination: "0.0.0.0/0"
+      action: "allow"
+      description: "HTTPS internet access for external APIs"
+    
+    - name: "DNS Access"
+      port: 53
+      protocol: "udp"
+      destination: "0.0.0.0/0"
+      action: "allow"
+      description: "DNS resolution"
+    
+    - name: "NTP Access"
+      port: 123
+      protocol: "udp"
+      destination: "0.0.0.0/0"
+      action: "allow"
+      description: "Network time protocol"
+
+# Network Policies (Kubernetes)
+network_policies:
+  - name: "api-gateway-policy"
+    namespace: "financial-platform"
+    pod_selector:
+      app: "api-gateway"
+    ingress:
+      - from:
+          - pod_selector:
+              app: "monitoring"
+        ports:
+          - protocol: "TCP"
+            port: 8090
+      - from:
+          - namespace_selector:
+              match_labels:
+                name: "ingress"
+        ports:
+          - protocol: "TCP"
+            port: 8090
+    egress:
+      - to:
+          - pod_selector:
+              app: "database-service"
+        ports:
+          - protocol: "TCP"
+            port: 8115
+      - to:
+          - pod_selector:
+              app: "monitoring-service"
+        ports:
+          - protocol: "TCP"
+            port: 8116
+
+  - name: "database-service-policy"
+    namespace: "financial-platform"
+    pod_selector:
+      app: "database-service"
+    ingress:
+      - from:
+          - pod_selector:
+              app: "api-gateway"
+        ports:
+          - protocol: "TCP"
+            port: 8115
+    egress:
+      - to:
+          - namespace_selector:
+              match_labels:
+                name: "database"
+        ports:
+          - protocol: "TCP"
+            port: 5432
+          - protocol: "TCP"
+            port: 27017
+          - protocol: "TCP"
+            port: 6379
+
+  - name: "payment-service-policy"
+    namespace: "financial-platform"
+    pod_selector:
+      app: "payment-service"
+    ingress:
+      - from:
+          - pod_selector:
+              app: "api-gateway"
+        ports:
+          - protocol: "TCP"
+            port: 8083
+    egress:
+      - to:
+          - pod_selector:
+              app: "database-service"
+        ports:
+          - protocol: "TCP"
+            port: 8115
+      - to:
+          - pod_selector:
+              app: "message-queue-service"
+        ports:
+          - protocol: "TCP"
+            port: 8117
+
+# Security Groups (Cloud providers)
+security_groups:
+  - name: "financial-platform-sg"
+    description: "Security group for Financial Platform"
+    rules:
+      - type: "ingress"
+        protocol: "tcp"
+        port_range: "8090"
+        source: "0.0.0.0/0"
+        description: "API Gateway HTTPS"
+      
+      - type: "ingress"
+        protocol: "tcp"
+        port_range: "8081-8119"
+        source: "10.0.0.0/8"
+        description: "Internal service communication"
+      
+      - type: "ingress"
+        protocol: "tcp"
+        port_range: "5432"
+        source: "10.0.0.0/8"
+        description: "PostgreSQL database"
+      
+      - type: "ingress"
+        protocol: "tcp"
+        port_range: "27017"
+        source: "10.0.0.0/8"
+        description: "MongoDB database"
+      
+      - type: "ingress"
+        protocol: "tcp"
+        port_range: "6379"
+        source: "10.0.0.0/8"
+        description: "Redis cache"
+      
+      - type: "egress"
+        protocol: "tcp"
+        port_range: "443"
+        destination: "0.0.0.0/0"
+        description: "HTTPS internet access"
+      
+      - type: "egress"
+        protocol: "udp"
+        port_range: "53"
+        destination: "0.0.0.0/0"
+        description: "DNS resolution"
+
+# VPN Configuration
+vpn_config:
+  - name: "financial-platform-vpn"
+    type: "site-to-site"
+    local_network: "10.0.0.0/8"
+    remote_network: "192.168.0.0/16"
+    encryption: "AES-256"
+    authentication: "pre-shared-key"
+    ike_version: "2"
+    phase1_lifetime: "28800"
+    phase2_lifetime: "3600"
+
+# DDoS Protection
+ddos_protection:
+  enabled: true
+  rate_limiting:
+    requests_per_second: 1000
+    burst_limit: 2000
+  blacklist_threshold: 100
+  whitelist_ips:
+    - "10.0.0.0/8"
+    - "172.16.0.0/12"
+    - "192.168.0.0/16"
+
+# Network Monitoring
+network_monitoring:
+  - name: "bandwidth-monitoring"
+    type: "snmp"
+    community: "financial-platform"
+    version: "2c"
+    interval: "60s"
+  
+  - name: "latency-monitoring"
+    type: "ping"
+    targets:
+      - "api-gateway:8090"
+      - "database-service:8115"
+      - "monitoring-service:8116"
+    interval: "30s"
+    timeout: "5s"
+  
+  - name: "connection-monitoring"
+    type: "tcp"
+    targets:
+      - "postgresql:5432"
+      - "mongodb:27017"
+      - "redis:6379"
+      - "rabbitmq:5672"
+    interval: "60s"
+    timeout: "10s"

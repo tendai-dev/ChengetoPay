@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  # OWASP ZAP security scanner
+  zap:
+    image: owasp/zap2docker-stable:latest
+    container_name: zap-scanner
+    ports:
+      - "8083:8080"
+    volumes:
+      - ./zap-reports:/zap/wrk
+    command: zap-baseline.py -t http://api-gateway:8090 -J zap-report.json
+    restart: "no"
+
+  # Nikto web server scanner
+  nikto:
+    image: solsson/nikto:latest
+    container_name: nikto-scanner
+    volumes:
+      - ./nikto-reports:/reports
+    command: nikto -h http://api-gateway:8090 -o /reports/nikto-report.txt
+    restart: "no"
+
+  # Nmap network scanner
+  nmap-security:
+    image: uzyexe/nmap:latest
+    container_name: nmap-security-scanner
+    volumes:
+      - ./nmap-reports:/reports
+    command: nmap -sS -sV -O --script vuln 10.0.0.0/8 -oA /reports/security-scan
+    restart: "no"
+
+  # Security headers checker
+  security-headers:
+    image: python:3.9-alpine
+    container_name: security-headers-checker
+    volumes:
+      - ./security-checker:/app
+    working_dir: /app
+    command: python check_headers.py
+    restart: "no"

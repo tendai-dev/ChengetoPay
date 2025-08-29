@@ -1,0 +1,472 @@
+# Database Sharding Configuration for Financial Platform
+# Horizontal scaling strategy for databases
+
+# PostgreSQL Sharding
+postgresql_sharding:
+  enabled: true
+  
+  # Sharding Strategy
+  sharding_strategy:
+    type: "hash_based"
+    shard_key: "user_id"
+    number_of_shards: 8
+    
+    # Shard Distribution
+    shard_distribution:
+      - shard_id: 0
+        host: "postgresql-shard-0"
+        port: 5432
+        weight: 1
+        region: "us-east-1"
+        
+      - shard_id: 1
+        host: "postgresql-shard-1"
+        port: 5432
+        weight: 1
+        region: "us-east-1"
+        
+      - shard_id: 2
+        host: "postgresql-shard-2"
+        port: 5432
+        weight: 1
+        region: "us-west-2"
+        
+      - shard_id: 3
+        host: "postgresql-shard-3"
+        port: 5432
+        weight: 1
+        region: "us-west-2"
+        
+      - shard_id: 4
+        host: "postgresql-shard-4"
+        port: 5432
+        weight: 1
+        region: "eu-west-1"
+        
+      - shard_id: 5
+        host: "postgresql-shard-5"
+        port: 5432
+        weight: 1
+        region: "eu-west-1"
+        
+      - shard_id: 6
+        host: "postgresql-shard-6"
+        port: 5432
+        weight: 1
+        region: "ap-southeast-1"
+        
+      - shard_id: 7
+        host: "postgresql-shard-7"
+        port: 5432
+        weight: 1
+        region: "ap-southeast-1"
+
+  # Sharded Tables
+  sharded_tables:
+    - name: "transactions"
+      shard_key: "user_id"
+      sharding_type: "hash"
+      
+    - name: "payments"
+      shard_key: "user_id"
+      sharding_type: "hash"
+      
+    - name: "escrow_accounts"
+      shard_key: "user_id"
+      sharding_type: "hash"
+      
+    - name: "ledger_entries"
+      shard_key: "user_id"
+      sharding_type: "hash"
+      
+    - name: "user_profiles"
+      shard_key: "user_id"
+      sharding_type: "hash"
+
+  # Non-Sharded Tables (Global)
+  global_tables:
+    - name: "currencies"
+      replication_type: "full"
+      
+    - name: "countries"
+      replication_type: "full"
+      
+    - name: "exchange_rates"
+      replication_type: "full"
+      
+    - name: "system_config"
+      replication_type: "full"
+
+# MongoDB Sharding
+mongodb_sharding:
+  enabled: true
+  
+  # Sharding Strategy
+  sharding_strategy:
+    type: "range_based"
+    shard_key: "user_id"
+    number_of_shards: 6
+    
+    # Shard Distribution
+    shard_distribution:
+      - shard_id: "shard0"
+        host: "mongodb-shard-0"
+        port: 27017
+        region: "us-east-1"
+        
+      - shard_id: "shard1"
+        host: "mongodb-shard-1"
+        port: 27017
+        region: "us-east-1"
+        
+      - shard_id: "shard2"
+        host: "mongodb-shard-2"
+        port: 27017
+        region: "us-west-2"
+        
+      - shard_id: "shard3"
+        host: "mongodb-shard-3"
+        port: 27017
+        region: "us-west-2"
+        
+      - shard_id: "shard4"
+        host: "mongodb-shard-4"
+        port: 27017
+        region: "eu-west-1"
+        
+      - shard_id: "shard5"
+        host: "mongodb-shard-5"
+        port: 27017
+        region: "eu-west-1"
+
+  # Sharded Collections
+  sharded_collections:
+    - name: "transactions"
+      shard_key: "user_id"
+      sharding_type: "range"
+      
+    - name: "payments"
+      shard_key: "user_id"
+      sharding_type: "range"
+      
+    - name: "escrow_accounts"
+      shard_key: "user_id"
+      sharding_type: "range"
+      
+    - name: "user_profiles"
+      shard_key: "user_id"
+      sharding_type: "range"
+      
+    - name: "analytics_data"
+      shard_key: "timestamp"
+      sharding_type: "range"
+
+  # Non-Sharded Collections (Global)
+  global_collections:
+    - name: "currencies"
+      replication_type: "full"
+      
+    - name: "countries"
+      replication_type: "full"
+      
+    - name: "exchange_rates"
+      replication_type: "full"
+      
+    - name: "system_config"
+      replication_type: "full"
+
+# Redis Cluster Sharding
+redis_cluster_sharding:
+  enabled: true
+  
+  # Cluster Configuration
+  cluster_config:
+    number_of_nodes: 12
+    replication_factor: 2
+    
+    # Node Distribution
+    nodes:
+      - node_id: "node-0"
+        host: "redis-node-0"
+        port: 6379
+        role: "master"
+        region: "us-east-1"
+        
+      - node_id: "node-1"
+        host: "redis-node-1"
+        port: 6379
+        role: "slave"
+        master: "node-0"
+        region: "us-east-1"
+        
+      - node_id: "node-2"
+        host: "redis-node-2"
+        port: 6379
+        role: "master"
+        region: "us-west-2"
+        
+      - node_id: "node-3"
+        host: "redis-node-3"
+        port: 6379
+        role: "slave"
+        master: "node-2"
+        region: "us-west-2"
+        
+      - node_id: "node-4"
+        host: "redis-node-4"
+        port: 6379
+        role: "master"
+        region: "eu-west-1"
+        
+      - node_id: "node-5"
+        host: "redis-node-5"
+        port: 6379
+        role: "slave"
+        master: "node-4"
+        region: "eu-west-1"
+
+  # Sharding Strategy
+  sharding_strategy:
+    type: "hash_slot"
+    number_of_slots: 16384
+    distribution: "uniform"
+
+# Shard Routing
+shard_routing:
+  # PostgreSQL Router
+  postgresql_router:
+    enabled: true
+    type: "pgbouncer"
+    instances:
+      - host: "postgresql-router-1"
+        port: 6432
+        region: "us-east-1"
+        
+      - host: "postgresql-router-2"
+        port: 6432
+        region: "us-west-2"
+        
+      - host: "postgresql-router-3"
+        port: 6432
+        region: "eu-west-1"
+
+  # MongoDB Router
+  mongodb_router:
+    enabled: true
+    type: "mongos"
+    instances:
+      - host: "mongodb-router-1"
+        port: 27017
+        region: "us-east-1"
+        
+      - host: "mongodb-router-2"
+        port: 27017
+        region: "us-west-2"
+        
+      - host: "mongodb-router-3"
+        port: 27017
+        region: "eu-west-1"
+
+  # Redis Router
+  redis_router:
+    enabled: true
+    type: "redis_cluster"
+    instances:
+      - host: "redis-router-1"
+        port: 6379
+        region: "us-east-1"
+        
+      - host: "redis-router-2"
+        port: 6379
+        region: "us-west-2"
+        
+      - host: "redis-router-3"
+        port: 6379
+        region: "eu-west-1"
+
+# Data Distribution
+data_distribution:
+  # Load Balancing
+  load_balancing:
+    enabled: true
+    strategy: "round_robin"
+    
+    # Health Checks
+    health_checks:
+      enabled: true
+      interval: 30
+      timeout: 5
+      failure_threshold: 3
+      success_threshold: 2
+
+  # Connection Pooling
+  connection_pooling:
+    enabled: true
+    
+    # Pool Configuration
+    pool_config:
+      max_connections: 100
+      min_connections: 10
+      connection_timeout: 30
+      idle_timeout: 300
+      max_lifetime: 3600
+
+# Shard Management
+shard_management:
+  # Shard Monitoring
+  shard_monitoring:
+    enabled: true
+    
+    # Metrics
+    metrics:
+      - "shard_size"
+      - "shard_connections"
+      - "shard_queries_per_second"
+      - "shard_response_time"
+      - "shard_error_rate"
+      - "shard_replication_lag"
+
+  # Shard Balancing
+  shard_balancing:
+    enabled: true
+    
+    # Balancing Policies
+    policies:
+      - name: "size_based_balancing"
+        metric: "shard_size"
+        threshold: 10  # GB
+        action: "rebalance"
+        
+      - name: "load_based_balancing"
+        metric: "queries_per_second"
+        threshold: 1000
+        action: "rebalance"
+        
+      - name: "connection_based_balancing"
+        metric: "active_connections"
+        threshold: 80
+        action: "rebalance"
+
+  # Shard Maintenance
+  shard_maintenance:
+    enabled: true
+    
+    # Maintenance Windows
+    maintenance_windows:
+      - name: "weekly_maintenance"
+        schedule: "0 2 * * 0"  # Sunday at 2 AM
+        duration: "2h"
+        
+      - name: "monthly_maintenance"
+        schedule: "0 2 1 * *"  # 1st of month at 2 AM
+        duration: "4h"
+
+# Backup and Recovery
+backup_recovery:
+  # Shard Backup
+  shard_backup:
+    enabled: true
+    
+    # Backup Strategy
+    strategy:
+      type: "individual_shard_backup"
+      frequency: "daily"
+      retention: "30 days"
+      
+    # Backup Verification
+    verification:
+      enabled: true
+      frequency: "weekly"
+      type: "restore_test"
+
+  # Shard Recovery
+  shard_recovery:
+    enabled: true
+    
+    # Recovery Procedures
+    procedures:
+      - name: "single_shard_recovery"
+        description: "Recover a single shard"
+        estimated_time: "30 minutes"
+        
+      - name: "multi_shard_recovery"
+        description: "Recover multiple shards"
+        estimated_time: "2 hours"
+        
+      - name: "full_cluster_recovery"
+        description: "Recover entire cluster"
+        estimated_time: "4 hours"
+
+# Performance Optimization
+performance_optimization:
+  # Query Optimization
+  query_optimization:
+    enabled: true
+    
+    # Optimization Strategies
+    strategies:
+      - name: "query_routing"
+        description: "Route queries to appropriate shards"
+        
+      - name: "query_parallelization"
+        description: "Execute queries in parallel across shards"
+        
+      - name: "result_aggregation"
+        description: "Aggregate results from multiple shards"
+
+  # Index Optimization
+  index_optimization:
+    enabled: true
+    
+    # Index Strategies
+    strategies:
+      - name: "shard_key_indexing"
+        description: "Optimize indexes on shard keys"
+        
+      - name: "global_indexing"
+        description: "Maintain global indexes for cross-shard queries"
+        
+      - name: "local_indexing"
+        description: "Optimize local indexes on each shard"
+
+# Monitoring and Alerts
+monitoring:
+  # Shard Health Monitoring
+  shard_health_monitoring:
+    enabled: true
+    
+    # Health Checks
+    health_checks:
+      - name: "shard_connectivity"
+        interval: 30
+        timeout: 5
+        
+      - name: "shard_performance"
+        interval: 60
+        threshold: 1000  # ms
+        
+      - name: "shard_replication"
+        interval: 300
+        threshold: 60  # seconds
+
+  # Shard Alerts
+  shard_alerts:
+    - name: "ShardUnavailable"
+      condition: "shard_connectivity == false"
+      severity: "critical"
+      notification_channels: ["slack", "email", "pagerduty"]
+      
+    - name: "ShardPerformanceDegraded"
+      condition: "shard_response_time > 1000"
+      severity: "warning"
+      notification_channels: ["slack", "email"]
+      
+    - name: "ShardReplicationLag"
+      condition: "shard_replication_lag > 60"
+      severity: "warning"
+      notification_channels: ["slack", "email"]
+      
+    - name: "ShardSizeHigh"
+      condition: "shard_size > 100GB"
+      severity: "warning"
+      notification_channels: ["slack", "email"]

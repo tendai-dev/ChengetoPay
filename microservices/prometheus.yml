@@ -1,0 +1,245 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # API Gateway
+  - job_name: 'api-gateway'
+    static_configs:
+      - targets: ['api-gateway:8090']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Infrastructure Services
+  - job_name: 'database-service'
+    static_configs:
+      - targets: ['database-service:8115']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'monitoring-service'
+    static_configs:
+      - targets: ['monitoring-service:8116']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'message-queue-service'
+    static_configs:
+      - targets: ['message-queue-service:8117']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'service-discovery'
+    static_configs:
+      - targets: ['service-discovery:8118']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'vault-service'
+    static_configs:
+      - targets: ['vault-service:8119']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Business Services
+  - job_name: 'escrow-service'
+    static_configs:
+      - targets: ['escrow-service:8081']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'payment-service'
+    static_configs:
+      - targets: ['payment-service:8083']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'ledger-service'
+    static_configs:
+      - targets: ['ledger-service:8084']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'risk-service'
+    static_configs:
+      - targets: ['risk-service:8085']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'treasury-service'
+    static_configs:
+      - targets: ['treasury-service:8086']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'evidence-service'
+    static_configs:
+      - targets: ['evidence-service:8087']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'compliance-service'
+    static_configs:
+      - targets: ['compliance-service:8088']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'workflow-service'
+    static_configs:
+      - targets: ['workflow-service:8089']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'journal-service'
+    static_configs:
+      - targets: ['journal-service:8091']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'fees-service'
+    static_configs:
+      - targets: ['fees-service:8092']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'refunds-service'
+    static_configs:
+      - targets: ['refunds-service:8093']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'transfers-service'
+    static_configs:
+      - targets: ['transfers-service:8094']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'fx-service'
+    static_configs:
+      - targets: ['fx-service:8095']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'payouts-service'
+    static_configs:
+      - targets: ['payouts-service:8096']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'reserves-service'
+    static_configs:
+      - targets: ['reserves-service:8097']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'reconciliation-service'
+    static_configs:
+      - targets: ['reconciliation-service:8098']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'kyb-service'
+    static_configs:
+      - targets: ['kyb-service:8099']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'sca-service'
+    static_configs:
+      - targets: ['sca-service:8100']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'disputes-service'
+    static_configs:
+      - targets: ['disputes-service:8101']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'dx-service'
+    static_configs:
+      - targets: ['dx-service:8102']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Critical Infrastructure Services
+  - job_name: 'auth-service'
+    static_configs:
+      - targets: ['auth-service:8103']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'idempotency-service'
+    static_configs:
+      - targets: ['idempotency-service:8104']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'eventbus-service'
+    static_configs:
+      - targets: ['eventbus-service:8105']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'saga-service'
+    static_configs:
+      - targets: ['saga-service:8106']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'vault-service-old'
+    static_configs:
+      - targets: ['vault-service-old:8107']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'webhooks-service'
+    static_configs:
+      - targets: ['webhooks-service:8108']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'observability-service'
+    static_configs:
+      - targets: ['observability-service:8109']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'config-service'
+    static_configs:
+      - targets: ['config-service:8110']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'workers-service'
+    static_configs:
+      - targets: ['workers-service:8111']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'portal-service'
+    static_configs:
+      - targets: ['portal-service:8112']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'data-platform-service'
+    static_configs:
+      - targets: ['data-platform-service:8113']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  - job_name: 'compliance-ops-service'
+    static_configs:
+      - targets: ['compliance-ops-service:8114']
+    metrics_path: '/metrics'
+    scrape_interval: 10s

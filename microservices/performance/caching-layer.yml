@@ -1,0 +1,325 @@
+# Caching Layer Configuration for Financial Platform
+# Multi-tier caching strategy for optimal performance
+
+# Redis Cache Configuration
+redis_cache:
+  # Primary Redis Cluster
+  primary_cluster:
+    enabled: true
+    nodes:
+      - host: "redis-primary-1"
+        port: 6379
+        role: "master"
+        memory: "8GB"
+        
+      - host: "redis-primary-2"
+        port: 6379
+        role: "slave"
+        memory: "8GB"
+        
+      - host: "redis-primary-3"
+        port: 6379
+        role: "slave"
+        memory: "8GB"
+    
+    # Configuration
+    config:
+      max_memory: "6GB"
+      max_memory_policy: "allkeys-lru"
+      persistence: "aof"
+      appendfsync: "everysec"
+      save_interval: "900 1"
+      
+  # Cache Tiers
+  cache_tiers:
+    # L1 Cache (In-Memory)
+    l1_cache:
+      type: "in_memory"
+      max_size: "2GB"
+      ttl: 300  # 5 minutes
+      eviction_policy: "lru"
+      
+      # Cached data types
+      data_types:
+        - name: "session_data"
+          ttl: 1800  # 30 minutes
+          max_size: "512MB"
+          
+        - name: "user_preferences"
+          ttl: 3600  # 1 hour
+          max_size: "256MB"
+          
+        - name: "rate_limits"
+          ttl: 60  # 1 minute
+          max_size: "128MB"
+          
+        - name: "api_keys"
+          ttl: 300  # 5 minutes
+          max_size: "64MB"
+
+    # L2 Cache (Redis)
+    l2_cache:
+      type: "redis"
+      max_size: "4GB"
+      ttl: 3600  # 1 hour
+      eviction_policy: "allkeys-lru"
+      
+      # Cached data types
+      data_types:
+        - name: "api_responses"
+          ttl: 1800  # 30 minutes
+          max_size: "1GB"
+          
+        - name: "database_queries"
+          ttl: 900  # 15 minutes
+          max_size: "1GB"
+          
+        - name: "configuration_data"
+          ttl: 7200  # 2 hours
+          max_size: "512MB"
+          
+        - name: "exchange_rates"
+          ttl: 300  # 5 minutes
+          max_size: "256MB"
+          
+        - name: "user_profiles"
+          ttl: 3600  # 1 hour
+          max_size: "512MB"
+          
+        - name: "transaction_status"
+          ttl: 600  # 10 minutes
+          max_size: "256MB"
+
+    # L3 Cache (Distributed)
+    l3_cache:
+      type: "distributed_redis"
+      max_size: "16GB"
+      ttl: 86400  # 24 hours
+      eviction_policy: "volatile-lru"
+      
+      # Cached data types
+      data_types:
+        - name: "static_content"
+          ttl: 86400  # 24 hours
+          max_size: "4GB"
+          
+        - name: "historical_data"
+          ttl: 604800  # 1 week
+          max_size: "8GB"
+          
+        - name: "analytics_data"
+          ttl: 2592000  # 30 days
+          max_size: "4GB"
+
+# Cache Strategies
+cache_strategies:
+  # Write-Through Cache
+  write_through:
+    enabled: true
+    services:
+      - name: "user_service"
+        cache_keys: ["user_profile", "user_preferences"]
+        write_strategy: "write_through"
+        
+      - name: "payment_service"
+        cache_keys: ["payment_status", "transaction_history"]
+        write_strategy: "write_through"
+
+  # Write-Behind Cache
+  write_behind:
+    enabled: true
+    services:
+      - name: "analytics_service"
+        cache_keys: ["analytics_data", "metrics"]
+        write_strategy: "write_behind"
+        batch_size: 100
+        flush_interval: 60  # seconds
+
+  # Cache-Aside Pattern
+  cache_aside:
+    enabled: true
+    services:
+      - name: "config_service"
+        cache_keys: ["app_config", "feature_flags"]
+        read_strategy: "cache_aside"
+        
+      - name: "rates_service"
+        cache_keys: ["exchange_rates", "currency_rates"]
+        read_strategy: "cache_aside"
+
+# Cache Invalidation
+cache_invalidation:
+  # Time-Based Invalidation
+  time_based:
+    enabled: true
+    strategies:
+      - name: "ttl_based"
+        description: "Automatic expiration based on TTL"
+        
+      - name: "sliding_expiration"
+        description: "Extend TTL on access"
+        services: ["session_service", "user_service"]
+
+  # Event-Based Invalidation
+  event_based:
+    enabled: true
+    events:
+      - name: "user_updated"
+        cache_keys: ["user_profile", "user_preferences"]
+        invalidation_strategy: "immediate"
+        
+      - name: "payment_completed"
+        cache_keys: ["payment_status", "transaction_history"]
+        invalidation_strategy: "immediate"
+        
+      - name: "config_changed"
+        cache_keys: ["app_config", "feature_flags"]
+        invalidation_strategy: "immediate"
+        
+      - name: "rates_updated"
+        cache_keys: ["exchange_rates", "currency_rates"]
+        invalidation_strategy: "immediate"
+
+  # Pattern-Based Invalidation
+  pattern_based:
+    enabled: true
+    patterns:
+      - pattern: "user:*"
+        invalidation_strategy: "wildcard"
+        
+      - pattern: "payment:*"
+        invalidation_strategy: "wildcard"
+        
+      - pattern: "config:*"
+        invalidation_strategy: "wildcard"
+
+# Cache Warming
+cache_warming:
+  enabled: true
+  
+  # Warm-up strategies
+  strategies:
+    - name: "startup_warming"
+      description: "Warm cache on service startup"
+      triggers: ["service_start"]
+      
+    - name: "scheduled_warming"
+      description: "Warm cache on schedule"
+      schedule: "0 */6 * * *"  # Every 6 hours
+      
+    - name: "demand_warming"
+      description: "Warm cache on demand"
+      triggers: ["user_request"]
+
+  # Warm-up data
+  warm_up_data:
+    - name: "critical_configs"
+      keys: ["app_config", "feature_flags", "exchange_rates"]
+      priority: "high"
+      
+    - name: "frequent_queries"
+      keys: ["user_profiles", "payment_status"]
+      priority: "medium"
+      
+    - name: "static_content"
+      keys: ["currencies", "countries", "timezones"]
+      priority: "low"
+
+# Cache Monitoring
+cache_monitoring:
+  # Performance Metrics
+  performance_metrics:
+    enabled: true
+    metrics:
+      - "cache_hit_ratio"
+      - "cache_miss_ratio"
+      - "cache_size"
+      - "eviction_rate"
+      - "memory_usage"
+      - "response_time"
+      - "throughput"
+      
+  # Health Checks
+  health_checks:
+    enabled: true
+    checks:
+      - name: "redis_connectivity"
+        interval: 30
+        timeout: 5
+        
+      - name: "cache_operations"
+        interval: 60
+        timeout: 10
+        
+      - name: "memory_usage"
+        interval: 300
+        threshold: 80  # percentage
+
+  # Alerts
+  alerts:
+    - name: "LowCacheHitRatio"
+      condition: "cache_hit_ratio < 80"
+      severity: "warning"
+      notification_channels: ["slack", "email"]
+      
+    - name: "HighMemoryUsage"
+      condition: "memory_usage > 85"
+      severity: "warning"
+      notification_channels: ["slack", "email"]
+      
+    - name: "HighEvictionRate"
+      condition: "eviction_rate > 100"
+      severity: "critical"
+      notification_channels: ["slack", "email", "pagerduty"]
+      
+    - name: "CacheUnavailable"
+      condition: "redis_connectivity == false"
+      severity: "critical"
+      notification_channels: ["slack", "email", "pagerduty"]
+
+# Cache Optimization
+cache_optimization:
+  # Memory Optimization
+  memory_optimization:
+    enabled: true
+    strategies:
+      - name: "compression"
+        description: "Compress cached data"
+        compression_ratio: 0.7
+        
+      - name: "serialization"
+        description: "Optimize serialization format"
+        format: "msgpack"
+        
+      - name: "key_optimization"
+        description: "Optimize cache keys"
+        max_key_length: 64
+
+  # Performance Optimization
+  performance_optimization:
+    enabled: true
+    strategies:
+      - name: "connection_pooling"
+        description: "Use connection pools"
+        pool_size: 50
+        
+      - name: "pipeline_operations"
+        description: "Use pipelining for batch operations"
+        batch_size: 100
+        
+      - name: "async_operations"
+        description: "Use async operations where possible"
+        enabled: true
+
+  # Cost Optimization
+  cost_optimization:
+    enabled: true
+    strategies:
+      - name: "ttl_optimization"
+        description: "Optimize TTL values based on usage patterns"
+        
+      - name: "size_optimization"
+        description: "Optimize cache sizes based on usage"
+        
+      - name: "tier_optimization"
+        description: "Use appropriate cache tiers for data types"

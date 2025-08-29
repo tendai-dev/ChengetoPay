@@ -1,0 +1,314 @@
+# Advanced Metrics Configuration for Financial Platform
+# Business-specific monitoring and SLA tracking
+
+# Business Metrics
+business_metrics:
+  # Payment Processing Metrics
+  payment_metrics:
+    - name: "payment_success_rate"
+      description: "Percentage of successful payment transactions"
+      type: "gauge"
+      threshold:
+        warning: 95.0
+        critical: 90.0
+      calculation: "successful_payments / total_payments * 100"
+    
+    - name: "payment_processing_time"
+      description: "Average payment processing time in milliseconds"
+      type: "histogram"
+      threshold:
+        warning: 2000
+        critical: 5000
+      buckets: [100, 500, 1000, 2000, 5000, 10000]
+    
+    - name: "payment_volume_daily"
+      description: "Total payment volume processed per day"
+      type: "counter"
+      currency: "USD"
+    
+    - name: "payment_failure_rate"
+      description: "Percentage of failed payment transactions"
+      type: "gauge"
+      threshold:
+        warning: 5.0
+        critical: 10.0
+
+  # Escrow Metrics
+  escrow_metrics:
+    - name: "escrow_creation_rate"
+      description: "Number of escrow accounts created per hour"
+      type: "counter"
+      threshold:
+        warning: 100
+        critical: 50
+    
+    - name: "escrow_completion_time"
+      description: "Average time to complete escrow transactions"
+      type: "histogram"
+      threshold:
+        warning: 86400  # 24 hours
+        critical: 604800 # 7 days
+    
+    - name: "escrow_funds_held"
+      description: "Total funds currently held in escrow"
+      type: "gauge"
+      currency: "USD"
+
+  # Risk Assessment Metrics
+  risk_metrics:
+    - name: "risk_score_distribution"
+      description: "Distribution of risk scores across transactions"
+      type: "histogram"
+      buckets: [0, 25, 50, 75, 100]
+    
+    - name: "high_risk_transactions"
+      description: "Number of high-risk transactions flagged"
+      type: "counter"
+      threshold:
+        warning: 10
+        critical: 50
+    
+    - name: "fraud_detection_rate"
+      description: "Percentage of fraudulent transactions detected"
+      type: "gauge"
+      threshold:
+        warning: 0.1
+        critical: 1.0
+
+  # Compliance Metrics
+  compliance_metrics:
+    - name: "kyc_completion_rate"
+      description: "Percentage of KYC processes completed successfully"
+      type: "gauge"
+      threshold:
+        warning: 95.0
+        critical: 90.0
+    
+    - name: "aml_alert_rate"
+      description: "Number of AML alerts generated per day"
+      type: "counter"
+      threshold:
+        warning: 100
+        critical: 500
+    
+    - name: "regulatory_reporting_latency"
+      description: "Time to generate regulatory reports"
+      type: "histogram"
+      threshold:
+        warning: 3600  # 1 hour
+        critical: 7200  # 2 hours
+
+# SLA Definitions
+sla_definitions:
+  # Payment Processing SLA
+  payment_processing:
+    availability: 99.9
+    response_time_p95: 2000  # 2 seconds
+    response_time_p99: 5000  # 5 seconds
+    error_rate: 0.1
+    throughput: 1000  # transactions per second
+    
+  # Escrow Processing SLA
+  escrow_processing:
+    availability: 99.95
+    response_time_p95: 5000  # 5 seconds
+    response_time_p99: 10000 # 10 seconds
+    error_rate: 0.05
+    throughput: 100  # escrow creations per minute
+    
+  # Risk Assessment SLA
+  risk_assessment:
+    availability: 99.9
+    response_time_p95: 1000  # 1 second
+    response_time_p99: 3000  # 3 seconds
+    error_rate: 0.1
+    throughput: 5000  # assessments per minute
+    
+  # Compliance Processing SLA
+  compliance_processing:
+    availability: 99.8
+    response_time_p95: 30000 # 30 seconds
+    response_time_p99: 60000 # 60 seconds
+    error_rate: 0.2
+    throughput: 100  # compliance checks per minute
+
+# Custom Dashboards
+dashboards:
+  # Executive Dashboard
+  executive_dashboard:
+    title: "Financial Platform Executive Overview"
+    refresh: "30s"
+    panels:
+      - title: "Total Transaction Volume"
+        type: "stat"
+        targets:
+          - expr: "sum(payment_volume_daily)"
+        thresholds:
+          - color: "green"
+            value: 1000000
+          - color: "yellow"
+            value: 500000
+          - color: "red"
+            value: 100000
+    
+      - title: "Payment Success Rate"
+        type: "gauge"
+        targets:
+          - expr: "payment_success_rate"
+        thresholds:
+          - color: "green"
+            value: 95
+          - color: "yellow"
+            value: 90
+          - color: "red"
+            value: 85
+    
+      - title: "Active Escrow Accounts"
+        type: "stat"
+        targets:
+          - expr: "escrow_accounts_active"
+    
+      - title: "Risk Score Distribution"
+        type: "heatmap"
+        targets:
+          - expr: "rate(risk_score_distribution_bucket[5m])"
+
+  # Operations Dashboard
+  operations_dashboard:
+    title: "Financial Platform Operations"
+    refresh: "10s"
+    panels:
+      - title: "Service Response Times"
+        type: "graph"
+        targets:
+          - expr: "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))"
+            legendFormat: "{{service}} - P95"
+          - expr: "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m]))"
+            legendFormat: "{{service}} - P99"
+      
+      - title: "Error Rates by Service"
+        type: "graph"
+        targets:
+          - expr: "rate(http_requests_total{status=~\"5..\"}[5m]) / rate(http_requests_total[5m])"
+            legendFormat: "{{service}}"
+      
+      - title: "Database Connection Pool"
+        type: "graph"
+        targets:
+          - expr: "database_connections_active"
+            legendFormat: "{{database}} - Active"
+          - expr: "database_connections_idle"
+            legendFormat: "{{database}} - Idle"
+      
+      - title: "Queue Depths"
+        type: "graph"
+        targets:
+          - expr: "rabbitmq_queue_messages"
+            legendFormat: "{{queue}}"
+
+  # Security Dashboard
+  security_dashboard:
+    title: "Financial Platform Security"
+    refresh: "30s"
+    panels:
+      - title: "Failed Authentication Attempts"
+        type: "graph"
+        targets:
+          - expr: "rate(auth_failed_attempts_total[5m])"
+      
+      - title: "Suspicious IP Addresses"
+        type: "table"
+        targets:
+          - expr: "suspicious_ips_total"
+      
+      - title: "Rate Limit Violations"
+        type: "graph"
+        targets:
+          - expr: "rate(rate_limit_violations_total[5m])"
+      
+      - title: "SSL Certificate Expiry"
+        type: "stat"
+        targets:
+          - expr: "ssl_certificate_expiry_days"
+        thresholds:
+          - color: "green"
+            value: 30
+          - color: "yellow"
+            value: 7
+          - color: "red"
+            value: 1
+
+# Alert Rules
+alert_rules:
+  # Payment Processing Alerts
+  - alert: "PaymentSuccessRateLow"
+    expr: "payment_success_rate < 95"
+    for: "5m"
+    labels:
+      severity: "warning"
+      service: "payment"
+    annotations:
+      summary: "Payment success rate is below 95%"
+      description: "Payment success rate is {{ $value }}% for the last 5 minutes"
+  
+  - alert: "PaymentProcessingTimeHigh"
+    expr: "histogram_quantile(0.95, rate(payment_processing_time_bucket[5m])) > 2"
+    for: "2m"
+    labels:
+      severity: "warning"
+      service: "payment"
+    annotations:
+      summary: "Payment processing time is high"
+      description: "95th percentile payment processing time is {{ $value }}ms"
+  
+  # Escrow Alerts
+  - alert: "EscrowCreationRateLow"
+    expr: "rate(escrow_creation_total[5m]) < 1"
+    for: "10m"
+    labels:
+      severity: "warning"
+      service: "escrow"
+    annotations:
+      summary: "Escrow creation rate is low"
+      description: "Escrow creation rate is {{ $value }} per minute"
+  
+  # Risk Assessment Alerts
+  - alert: "HighRiskTransactionsHigh"
+    expr: "rate(high_risk_transactions_total[5m]) > 10"
+    for: "5m"
+    labels:
+      severity: "critical"
+      service: "risk"
+    annotations:
+      summary: "High number of high-risk transactions"
+      description: "{{ $value }} high-risk transactions per minute"
+  
+  # Compliance Alerts
+  - alert: "KYCCompletionRateLow"
+    expr: "kyc_completion_rate < 90"
+    for: "15m"
+    labels:
+      severity: "warning"
+      service: "compliance"
+    annotations:
+      summary: "KYC completion rate is low"
+      description: "KYC completion rate is {{ $value }}%"
+  
+  # Infrastructure Alerts
+  - alert: "ServiceDown"
+    expr: "up == 0"
+    for: "1m"
+    labels:
+      severity: "critical"
+    annotations:
+      summary: "Service {{ $labels.service }} is down"
+      description: "Service {{ $labels.service }} has been down for more than 1 minute"
+  
+  - alert: "HighErrorRate"
+    expr: "rate(http_requests_total{status=~\"5..\"}[5m]) / rate(http_requests_total[5m]) > 0.05"
+    for: "2m"
+    labels:
+      severity: "warning"
+    annotations:
+      summary: "High error rate for {{ $labels.service }}"
+      description: "Error rate is {{ $value | humanizePercentage }} for {{ $labels.service }}"
