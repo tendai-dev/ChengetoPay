@@ -151,7 +151,7 @@ func handleProcessPayment(w http.ResponseWriter, r *http.Request, paymentID stri
 	
 	req.PaymentID = paymentID
 	
-	if err := paymentService.ProcessPayment(r.Context(), &req); err != nil {
+	if err := paymentService.ProcessPayment(r.Context(), req.PaymentID); err != nil {
 		log.Printf("Failed to process payment: %v", err)
 		http.Error(w, "Failed to process payment", http.StatusInternalServerError)
 		return

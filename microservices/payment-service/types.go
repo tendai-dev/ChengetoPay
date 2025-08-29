@@ -187,11 +187,10 @@ func (m *MockRepository) GetPayment(ctx context.Context, id string) (*Payment, e
 		ID:        id,
 		AccountID: "acc_123",
 		Provider:  "stripe",
-		Method:    "card",
-		Amount:    FromMinorUnits("USD", 5000), // $50
+		Method:    "credit_card",
+		Amount:    FromMinorUnits("USD", 5000),
 		Currency:  "USD",
-		Status:    "completed",
-		ExternalRef: "txn_" + id,
+		Status:    "pending",
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}, nil

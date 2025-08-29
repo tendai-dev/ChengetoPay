@@ -59,9 +59,20 @@ type LedgerEntry = Entry
 
 // CreateAccountRequest represents a request to create an account
 type CreateAccountRequest struct {
-	AccountID   string `json:"account_id"`
-	Currency    string `json:"currency"`
-	AccountType string `json:"account_type"`
+	AccountID string                 `json:"account_id"`
+	Currency  string                 `json:"currency"`
+	Type      string                 `json:"account_type"`
+	Metadata  map[string]interface{} `json:"metadata,omitempty"`
+}
+
+// CreateEntryRequest represents a request to create a ledger entry
+type CreateEntryRequest struct {
+	AccountID   string                 `json:"account_id"`
+	Type        string                 `json:"type"`
+	Amount      Money                  `json:"amount"`
+	Description string                 `json:"description"`
+	Reference   string                 `json:"reference,omitempty"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // PostEntryRequest represents a request to post a ledger entry
@@ -91,11 +102,13 @@ type AccountFilters struct {
 
 // EntryFilters represents filters for listing entries
 type EntryFilters struct {
-	AccountID     string `json:"account_id"`
-	TransactionID string `json:"transaction_id"`
-	Type          string `json:"type"`
-	Limit         int    `json:"limit"`
-	Offset        int    `json:"offset"`
+	AccountID     string     `json:"account_id"`
+	TransactionID string     `json:"transaction_id"`
+	Type          string     `json:"type"`
+	FromDate      *time.Time `json:"from_date,omitempty"`
+	ToDate        *time.Time `json:"to_date,omitempty"`
+	Limit         int        `json:"limit"`
+	Offset        int        `json:"offset"`
 }
 
 // Repository interface for ledger data access
@@ -129,7 +142,7 @@ func (s *Service) CreateAccount(ctx context.Context, req *CreateAccountRequest) 
 	account := &LedgerAccount{
 		ID:        generateID(),
 		Name:      req.AccountID,
-		Type:      req.AccountType,
+		Type:      req.Type,
 		Currency:  req.Currency,
 		Balance:   FromMinorUnits(req.Currency, 0),
 		Status:    "active",

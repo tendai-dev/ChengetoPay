@@ -10,11 +10,12 @@ func TestPaymentService_CreatePayment(t *testing.T) {
 	service := NewService(repo, nil)
 
 	req := &CreatePaymentRequest{
-		AccountID: "acc_123",
-		Provider:  "stripe",
+		AccountID:     "acc_123",
+		Provider:      "stripe",
 		PaymentMethod: "credit_card",
-		Amount:    FromMinorUnits("USD", 5000), // $50
-		Metadata:  map[string]interface{}{"order_id": "order_123"},
+		Amount:        FromMinorUnits("USD", 5000), // $50
+		Description:   "Test payment for order",
+		Metadata:      map[string]interface{}{"order_id": "order_123"},
 	}
 
 	payment, err := service.CreatePayment(context.Background(), req)
@@ -62,8 +63,8 @@ func TestPaymentService_GetPayment(t *testing.T) {
 		t.Errorf("Expected ID 'test_id', got %s", payment.ID)
 	}
 
-	if payment.Status != "completed" {
-		t.Errorf("Expected status 'completed', got %s", payment.Status)
+	if payment.Status != "pending" {
+		t.Errorf("Expected status 'pending', got %s", payment.Status)
 	}
 }
 
@@ -145,11 +146,12 @@ func BenchmarkPaymentService_CreatePayment(b *testing.B) {
 	service := NewService(repo, nil)
 
 	req := &CreatePaymentRequest{
-		AccountID: "acc_123",
-		Provider:  "stripe",
+		AccountID:     "acc_123",
+		Provider:      "stripe",
 		PaymentMethod: "credit_card",
-		Amount:    FromMinorUnits("USD", 5000),
-		Metadata:  map[string]interface{}{"order_id": "order_123"},
+		Amount:        FromMinorUnits("USD", 5000),
+		Description:   "Test payment for benchmark",
+		Metadata:      map[string]interface{}{"order_id": "order_123"},
 	}
 
 	b.ResetTimer()
