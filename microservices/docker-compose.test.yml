@@ -1,0 +1,140 @@
+version: '3.8'
+
+services:
+  # Database services
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: projectx
+      POSTGRES_USER: projectx
+      POSTGRES_PASSWORD: projectx123
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./database/core_schemas.sql:/docker-entrypoint-initdb.d/01-core.sql
+      - ./database/financial_schemas.sql:/docker-entrypoint-initdb.d/02-financial.sql
+      - ./database/compliance_schemas.sql:/docker-entrypoint-initdb.d/03-compliance.sql
+      - ./database/infrastructure_schemas.sql:/docker-entrypoint-initdb.d/04-infrastructure.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U projectx"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Core services
+  escrow-service:
+    build:
+      context: ./escrow-service
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      - DATABASE_URL=postgres://projectx:projectx123@postgres:5432/projectx?sslmode=disable
+      - REDIS_URL=redis://redis:6379
+      - PORT=8081
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  payment-service:
+    build:
+      context: ./payment-service
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8083"
+    environment:
+      - DATABASE_URL=postgres://projectx:projectx123@postgres:5432/projectx?sslmode=disable
+      - REDIS_URL=redis://redis:6379
+      - PORT=8083
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  ledger-service:
+    build:
+      context: ./ledger-service
+      dockerfile: Dockerfile
+    ports:
+      - "8084:8084"
+    environment:
+      - DATABASE_URL=postgres://projectx:projectx123@postgres:5432/projectx?sslmode=disable
+      - REDIS_URL=redis://redis:6379
+      - PORT=8084
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  risk-service:
+    build:
+      context: ./risk-service
+      dockerfile: Dockerfile
+    ports:
+      - "8085:8085"
+    environment:
+      - DATABASE_URL=postgres://projectx:projectx123@postgres:5432/projectx?sslmode=disable
+      - REDIS_URL=redis://redis:6379
+      - PORT=8085
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8090:8090"
+    environment:
+      - PORT=8090
+    depends_on:
+      - escrow-service
+      - payment-service
+      - ledger-service
+      - risk-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  default:
+    name: projectx-test-network

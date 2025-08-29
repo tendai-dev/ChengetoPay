@@ -1,4 +1,4 @@
-version: '3.8'
+# Docker Compose for Project X - Production Ready
 
 services:
   # Infrastructure Services
@@ -22,7 +22,7 @@ services:
       - financial_network
 
   consul:
-    image: consul:latest
+    image: hashicorp/consul:latest
     container_name: consul
     ports:
       - "8500:8500"
@@ -39,7 +39,7 @@ services:
       - financial_network
 
   vault:
-    image: vault:latest
+    image: hashicorp/vault:latest
     container_name: vault
     ports:
       - "8200:8200"
