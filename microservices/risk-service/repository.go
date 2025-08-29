@@ -211,11 +211,11 @@ func (r *PostgreSQLRepository) CreateRiskRule(ctx context.Context, rule *RiskRul
 		rule.ID,
 		rule.Name,
 		rule.Description,
-		rule.Type,
+		rule.RuleType,
 		conditionsJSON,
 		actionsJSON,
 		rule.Priority,
-		rule.Enabled,
+		rule.IsActive,
 		metadataJSON,
 		rule.CreatedAt,
 		rule.UpdatedAt,
@@ -253,11 +253,11 @@ func (r *PostgreSQLRepository) GetRiskRules(ctx context.Context) ([]*RiskRule, e
 			&rule.ID,
 			&rule.Name,
 			&rule.Description,
-			&rule.Type,
+			&rule.RuleType,
 			&conditionsJSON,
 			&actionsJSON,
 			&rule.Priority,
-			&rule.Enabled,
+			&rule.IsActive,
 			&metadataJSON,
 			&rule.CreatedAt,
 			&rule.UpdatedAt,
@@ -310,15 +310,13 @@ func (r *PostgreSQLRepository) CreateAssessment(ctx context.Context, assessment 
 		return fmt.Errorf("failed to marshal factors: %w", err)
 	}
 
-	rulesJSON, err := json.Marshal(assessment.RulesTriggered)
+	rulesJSON, err := json.Marshal(assessment.RulesApplied)
 	if err != nil {
 		return fmt.Errorf("failed to marshal rules: %w", err)
 	}
 
-	recommendationsJSON, err := json.Marshal(assessment.Recommendations)
-	if err != nil {
-		return fmt.Errorf("failed to marshal recommendations: %w", err)
-	}
+	// Remove recommendations field as it doesn't exist in our type
+	recommendationsJSON := []byte("[]")
 
 	metadataJSON, err := json.Marshal(assessment.Metadata)
 	if err != nil {
@@ -329,7 +327,7 @@ func (r *PostgreSQLRepository) CreateAssessment(ctx context.Context, assessment 
 		assessment.ID,
 		assessment.EntityID,
 		assessment.EntityType,
-		assessment.AssessmentType,
+		"standard", // Default assessment type since field doesn't exist
 		assessment.RiskScore,
 		assessment.RiskLevel,
 		factorsJSON,
@@ -367,11 +365,12 @@ func (r *PostgreSQLRepository) GetAssessments(ctx context.Context, entityID stri
 		var assessment RiskAssessment
 		var factorsJSON, rulesJSON, recommendationsJSON, metadataJSON []byte
 
+		var assessmentType string // Temporary variable for unused field
 		err := rows.Scan(
 			&assessment.ID,
 			&assessment.EntityID,
 			&assessment.EntityType,
-			&assessment.AssessmentType,
+			&assessmentType,
 			&assessment.RiskScore,
 			&assessment.RiskLevel,
 			&factorsJSON,
@@ -393,16 +392,12 @@ func (r *PostgreSQLRepository) GetAssessments(ctx context.Context, entityID stri
 		}
 
 		if len(rulesJSON) > 0 {
-			if err := json.Unmarshal(rulesJSON, &assessment.RulesTriggered); err != nil {
+			if err := json.Unmarshal(rulesJSON, &assessment.RulesApplied); err != nil {
 				return nil, fmt.Errorf("failed to unmarshal rules: %w", err)
 			}
 		}
 
-		if len(recommendationsJSON) > 0 {
-			if err := json.Unmarshal(recommendationsJSON, &assessment.Recommendations); err != nil {
-				return nil, fmt.Errorf("failed to unmarshal recommendations: %w", err)
-			}
-		}
+		// Skip recommendations field as it doesn't exist in our type
 
 		if len(metadataJSON) > 0 {
 			if err := json.Unmarshal(metadataJSON, &assessment.Metadata); err != nil {

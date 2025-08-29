@@ -15,9 +15,11 @@ type RiskValidator struct {
 
 // NewRiskValidator creates a new risk validator
 func NewRiskValidator() *RiskValidator {
-	return &RiskValidator{
-		businessRuleValidator: NewBusinessRuleValidator(),
+	validator := &RiskValidator{}
+	validator.businessRuleValidator = &BusinessRuleValidator{
+		validator: validator,
 	}
+	return validator
 }
 
 // ValidateCreateRiskProfileRequest validates risk profile creation request
@@ -426,7 +428,7 @@ type BusinessRuleValidator struct {
 // NewBusinessRuleValidator creates a new business rule validator
 func NewBusinessRuleValidator() *BusinessRuleValidator {
 	return &BusinessRuleValidator{
-		validator: NewRiskValidator(),
+		validator: nil, // Will be set by NewRiskValidator
 	}
 }
 
