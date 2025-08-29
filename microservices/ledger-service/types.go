@@ -222,56 +222,79 @@ func (s *Service) GetBalance(ctx context.Context, accountID string) (*Money, err
 }
 
 // MockRepository implements Repository for testing
-type MockRepository struct{}
+type MockRepository struct {
+	accounts map[string]*Account
+	entries  map[string]*Entry
+}
+
+func NewMockRepository() *MockRepository {
+	return &MockRepository{
+		accounts: make(map[string]*Account),
+		entries:  make(map[string]*Entry),
+	}
+}
 
 func (m *MockRepository) CreateAccount(ctx context.Context, account *Account) error {
+	m.accounts[account.ID] = account
 	return nil
 }
 
 func (m *MockRepository) GetAccount(ctx context.Context, accountID string) (*Account, error) {
-	return &Account{
-		ID:        generateID(),
-		Name:      accountID,
-		Type:      "escrow",
-		Currency:  "USD",
-		Balance:   FromMinorUnits("USD", 10000), // $100
-		Status:    "active",
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}, nil
+	if account, exists := m.accounts[accountID]; exists {
+		return account, nil
+	}
+	return nil, nil
 }
 
 func (m *MockRepository) ListAccounts(ctx context.Context, filters AccountFilters) ([]*Account, error) {
-	return []*Account{}, nil
+	var accounts []*Account
+	for _, account := range m.accounts {
+		accounts = append(accounts, account)
+	}
+	return accounts, nil
 }
 
 func (m *MockRepository) UpdateAccount(ctx context.Context, account *Account) error {
+	m.accounts[account.ID] = account
 	return nil
 }
 
 func (m *MockRepository) DeleteAccount(ctx context.Context, id string) error {
+	delete(m.accounts, id)
 	return nil
 }
 
 func (m *MockRepository) CreateEntry(ctx context.Context, entry *Entry) error {
+	m.entries[entry.ID] = entry
 	return nil
 }
 
 func (m *MockRepository) GetEntry(ctx context.Context, id string) (*Entry, error) {
-	return &Entry{
-		ID:            generateID(),
-		AccountID:     "test_account",
-		TransactionID: "test_tx",
-		Type:          "credit",
-		Amount:        FromMinorUnits("USD", 1000),
-		Description:   "Test entry",
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
-	}, nil
+	if entry, exists := m.entries[id]; exists {
+		return entry, nil
+	}
+	return nil, nil
 }
 
 func (m *MockRepository) ListEntries(ctx context.Context, filters EntryFilters) ([]*Entry, error) {
-	return []*Entry{}, nil
+	var entries []*Entry
+	for _, entry := range m.entries {
+		if filters.AccountID != "" && entry.AccountID != filters.AccountID {
+			continue
+		}
+		entries = append(entries, entry)
+	}
+	return entries, nil
+}
+
+func (m *MockRepository) UpdateEntry(ctx context.Context, entry *Entry) error {
+	m.entries[entry.ID] = entry
+	return nil
+}
+
+func (m *MockRepository) DeleteEntry(ctx context.Context, id string) error {
+	delete(m.entries, id)
+	return nil
 }
 
 // Helper functions
