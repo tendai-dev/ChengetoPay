@@ -85,7 +85,7 @@ services:
     image: grafana/grafana:latest
     container_name: grafana
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       GF_SECURITY_ADMIN_PASSWORD: admin
       GF_USERS_ALLOW_SIGN_UP: false
@@ -102,8 +102,8 @@ services:
   # API Gateway
   api-gateway:
     build:
-      context: .
-      dockerfile: api-gateway/Dockerfile
+      context: ./api-gateway
+      dockerfile: Dockerfile
     container_name: api-gateway
     ports:
       - "8090:8090"
@@ -123,8 +123,8 @@ services:
   # Database Service
   database-service:
     build:
-      context: .
-      dockerfile: database-service/Dockerfile
+      context: ./database-service
+      dockerfile: Dockerfile
     container_name: database-service
     ports:
       - "8115:8115"
@@ -145,8 +145,8 @@ services:
   # Monitoring Service
   monitoring-service:
     build:
-      context: .
-      dockerfile: monitoring-service/Dockerfile
+      context: ./monitoring-service
+      dockerfile: Dockerfile
     container_name: monitoring-service
     ports:
       - "8116:8116"
@@ -166,8 +166,8 @@ services:
   # Message Queue Service
   message-queue-service:
     build:
-      context: .
-      dockerfile: message-queue-service/Dockerfile
+      context: ./message-queue-service
+      dockerfile: Dockerfile
     container_name: message-queue-service
     ports:
       - "8117:8117"
@@ -188,8 +188,8 @@ services:
   # Service Discovery Service
   service-discovery:
     build:
-      context: .
-      dockerfile: service-discovery/Dockerfile
+      context: ./service-discovery
+      dockerfile: Dockerfile
     container_name: service-discovery
     ports:
       - "8118:8118"
@@ -209,8 +209,8 @@ services:
   # Vault Service
   vault-service:
     build:
-      context: .
-      dockerfile: vault-service/Dockerfile
+      context: ./vault-service
+      dockerfile: Dockerfile
     container_name: vault-service
     ports:
       - "8119:8119"
@@ -231,8 +231,8 @@ services:
   # Business Services
   escrow-service:
     build:
-      context: .
-      dockerfile: escrow-service/Dockerfile
+      context: ./escrow-service
+      dockerfile: Dockerfile
     container_name: escrow-service
     ports:
       - "8081:8081"
@@ -251,8 +251,8 @@ services:
 
   payment-service:
     build:
-      context: .
-      dockerfile: payment-service/Dockerfile
+      context: ./payment-service
+      dockerfile: Dockerfile
     container_name: payment-service
     ports:
       - "8083:8083"
@@ -271,8 +271,8 @@ services:
 
   ledger-service:
     build:
-      context: .
-      dockerfile: ledger-service/Dockerfile
+      context: ./ledger-service
+      dockerfile: Dockerfile
     container_name: ledger-service
     ports:
       - "8084:8084"
