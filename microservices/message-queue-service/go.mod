@@ -1,6 +1,6 @@
 module message-queue-service
 
-go 1.24
+go 1.21
 
 require messagequeue v0.0.0
 

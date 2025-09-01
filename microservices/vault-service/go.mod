@@ -1,6 +1,6 @@
 module vault-service
 
-go 1.24
+go 1.21
 
 require vault v0.0.0
 
