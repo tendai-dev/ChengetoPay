@@ -1,13 +1,12 @@
 package clients
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"time"
-
-	"github.com/project-x/microservices/shared/circuitbreaker"
-	"github.com/project-x/microservices/shared/httpclient"
-	"github.com/project-x/microservices/shared/servicediscovery"
 )
 
 // EscrowClient handles communication with the escrow service
