@@ -1,0 +1,108 @@
+version: '3.8'
+
+# Local Database Services for Development
+# Use this while fixing cloud database connections
+
+services:
+  postgres-local:
+    image: postgres:15-alpine
+    container_name: postgres-local
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: chengetopay
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_local_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - local_db_network
+
+  mongodb-local:
+    image: mongo:6
+    container_name: mongodb-local
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: chengetopay
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    volumes:
+      - mongodb_local_data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - local_db_network
+
+  redis-local:
+    image: redis:7-alpine
+    container_name: redis-local
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_local_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - local_db_network
+
+  # Optional: Database management UIs
+  pgadmin-local:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin-local
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@local.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    depends_on:
+      - postgres-local
+    networks:
+      - local_db_network
+
+  mongo-express-local:
+    image: mongo-express:latest
+    container_name: mongo-express-local
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: admin
+      ME_CONFIG_MONGODB_URL: mongodb://admin:admin@mongodb-local:27017/
+    depends_on:
+      - mongodb-local
+    networks:
+      - local_db_network
+
+  redis-commander-local:
+    image: rediscommander/redis-commander:latest
+    container_name: redis-commander-local
+    ports:
+      - "8082:8081"
+    environment:
+      REDIS_HOSTS: local:redis-local:6379
+    depends_on:
+      - redis-local
+    networks:
+      - local_db_network
+
+volumes:
+  postgres_local_data:
+  mongodb_local_data:
+  redis_local_data:
+
+networks:
+  local_db_network:
+    driver: bridge
