@@ -1,33 +1,28 @@
 package clients
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"time"
-
-	"github.com/project-x/microservices/shared/circuitbreaker"
-	"github.com/project-x/microservices/shared/httpclient"
-	"github.com/project-x/microservices/shared/servicediscovery"
 )
 
 // LedgerClient handles communication with the ledger service
 type LedgerClient struct {
-	client         *httpclient.ServiceClient
-	circuitBreaker *circuitbreaker.CircuitBreaker
-	loadBalancer   *servicediscovery.LoadBalancer
+	baseURL string
+	client  *http.Client
 }
 
 // NewLedgerClient creates a new ledger service client
-func NewLedgerClient(loadBalancer *servicediscovery.LoadBalancer) *LedgerClient {
-	cb := circuitbreaker.NewCircuitBreaker(circuitbreaker.Config{
-		FailureThreshold: 5,
-		SuccessThreshold: 3,
-		Timeout:          60 * time.Second,
-	})
-
+func NewLedgerClient(baseURL string) *LedgerClient {
 	return &LedgerClient{
-		circuitBreaker: cb,
-		loadBalancer:   loadBalancer,
+		baseURL: baseURL,
+		client: &http.Client{
+			Timeout: 30 * time.Second,
+		},
 	}
 }
 
@@ -75,82 +70,94 @@ type JournalEntry struct {
 	CreatedAt   time.Time     `json:"created_at"`
 }
 
-// CreateAccount creates a new ledger account
+// CreateAccount creates a new account in the ledger
 func (c *LedgerClient) CreateAccount(ctx context.Context, req *CreateAccountRequest) (*Account, error) {
-	var account *Account
-	
-	err := c.circuitBreaker.Execute(ctx, func() error {
-		endpoint, err := c.loadBalancer.GetEndpoint("ledger-service")
-		if err != nil {
-			return fmt.Errorf("failed to get ledger service endpoint: %w", err)
-		}
+	body, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
 
-		if c.client == nil || c.client.BaseURL() != endpoint {
-			c.client = httpclient.NewServiceClient(endpoint, 30*time.Second)
-		}
+	reqHTTP, err := http.NewRequestWithContext(ctx, "POST", c.baseURL+"/v1/accounts", bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	reqHTTP.Header.Set("Content-Type", "application/json")
 
-		resp, err := c.client.Post(ctx, "/v1/accounts", req, nil)
-		if err != nil {
-			return err
-		}
+	resp, err := c.client.Do(reqHTTP)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
 
-		account = &Account{}
-		return resp.UnmarshalResponse(account)
-	})
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("failed to create account: %d, body: %s", resp.StatusCode, string(body))
+	}
 
-	return account, err
+	var account Account
+	if err := json.NewDecoder(resp.Body).Decode(&account); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &account, nil
 }
 
 // GetAccount retrieves an account by ID
 func (c *LedgerClient) GetAccount(ctx context.Context, accountID string) (*Account, error) {
-	var account *Account
-	
-	err := c.circuitBreaker.Execute(ctx, func() error {
-		endpoint, err := c.loadBalancer.GetEndpoint("ledger-service")
-		if err != nil {
-			return fmt.Errorf("failed to get ledger service endpoint: %w", err)
-		}
+	reqHTTP, err := http.NewRequestWithContext(ctx, "GET", c.baseURL+"/v1/accounts/"+accountID, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
 
-		if c.client == nil || c.client.BaseURL() != endpoint {
-			c.client = httpclient.NewServiceClient(endpoint, 30*time.Second)
-		}
+	resp, err := c.client.Do(reqHTTP)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
 
-		resp, err := c.client.Get(ctx, fmt.Sprintf("/v1/accounts/%s", accountID), nil)
-		if err != nil {
-			return err
-		}
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("failed to get account: %d, body: %s", resp.StatusCode, string(body))
+	}
 
-		account = &Account{}
-		return resp.UnmarshalResponse(account)
-	})
+	var account Account
+	if err := json.NewDecoder(resp.Body).Decode(&account); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
 
-	return account, err
+	return &account, nil
 }
 
 // CreateJournalEntry creates a new journal entry
 func (c *LedgerClient) CreateJournalEntry(ctx context.Context, req *CreateJournalEntryRequest) (*JournalEntry, error) {
-	var entry *JournalEntry
-	
-	err := c.circuitBreaker.Execute(ctx, func() error {
-		endpoint, err := c.loadBalancer.GetEndpoint("ledger-service")
-		if err != nil {
-			return fmt.Errorf("failed to get ledger service endpoint: %w", err)
-		}
+	body, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
 
-		if c.client == nil || c.client.BaseURL() != endpoint {
-			c.client = httpclient.NewServiceClient(endpoint, 30*time.Second)
-		}
+	reqHTTP, err := http.NewRequestWithContext(ctx, "POST", c.baseURL+"/v1/journal-entries", bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	reqHTTP.Header.Set("Content-Type", "application/json")
 
-		resp, err := c.client.Post(ctx, "/v1/journal-entries", req, nil)
-		if err != nil {
-			return err
-		}
+	resp, err := c.client.Do(reqHTTP)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
 
-		entry = &JournalEntry{}
-		return resp.UnmarshalResponse(entry)
-	})
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("failed to create journal entry: %d, body: %s", resp.StatusCode, string(body))
+	}
 
-	return entry, err
+	var entry JournalEntry
+	if err := json.NewDecoder(resp.Body).Decode(&entry); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &entry, nil
 }
 
 // GetAccountBalance retrieves the current balance of an account

@@ -5,28 +5,24 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 )
 
 // EscrowClient handles communication with the escrow service
 type EscrowClient struct {
-	client         *httpclient.ServiceClient
-	circuitBreaker *circuitbreaker.CircuitBreaker
-	loadBalancer   *servicediscovery.LoadBalancer
+	baseURL string
+	client  *http.Client
 }
 
 // NewEscrowClient creates a new escrow service client
-func NewEscrowClient(loadBalancer *servicediscovery.LoadBalancer) *EscrowClient {
-	cb := circuitbreaker.NewCircuitBreaker(circuitbreaker.Config{
-		FailureThreshold: 5,
-		SuccessThreshold: 3,
-		Timeout:          60 * time.Second,
-	})
-
+func NewEscrowClient(baseURL string) *EscrowClient {
 	return &EscrowClient{
-		circuitBreaker: cb,
-		loadBalancer:   loadBalancer,
+		baseURL: baseURL,
+		client: &http.Client{
+			Timeout: 30 * time.Second,
+		},
 	}
 }
 
@@ -61,128 +57,128 @@ type Money struct {
 
 // CreateEscrow creates a new escrow
 func (c *EscrowClient) CreateEscrow(ctx context.Context, req *CreateEscrowRequest) (*Escrow, error) {
-	var escrow *Escrow
-	
-	err := c.circuitBreaker.Execute(ctx, func() error {
-		endpoint, err := c.loadBalancer.GetEndpoint("escrow-service")
-		if err != nil {
-			return fmt.Errorf("failed to get escrow service endpoint: %w", err)
-		}
+	data, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
 
-		if c.client == nil {
-			c.client = httpclient.NewServiceClient(endpoint, 30*time.Second)
-		}
+	reqHTTP, err := http.NewRequestWithContext(ctx, "POST", c.baseURL+"/v1/escrows", bytes.NewBuffer(data))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	reqHTTP.Header.Set("Content-Type", "application/json")
 
-		resp, err := c.client.Post(ctx, "/v1/escrows", req, nil)
-		if err != nil {
-			return err
-		}
+	resp, err := c.client.Do(reqHTTP)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
 
-		escrow = &Escrow{}
-		return resp.UnmarshalResponse(escrow)
-	})
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode, string(body))
+	}
 
-	return escrow, err
+	var escrow Escrow
+	if err := json.NewDecoder(resp.Body).Decode(&escrow); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &escrow, nil
 }
 
 // GetEscrow retrieves an escrow by ID
 func (c *EscrowClient) GetEscrow(ctx context.Context, escrowID string) (*Escrow, error) {
-	var escrow *Escrow
-	
-	err := c.circuitBreaker.Execute(ctx, func() error {
-		endpoint, err := c.loadBalancer.GetEndpoint("escrow-service")
-		if err != nil {
-			return fmt.Errorf("failed to get escrow service endpoint: %w", err)
-		}
+	reqHTTP, err := http.NewRequestWithContext(ctx, "GET", c.baseURL+"/v1/escrows/"+escrowID, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
 
-		if c.client == nil || c.client.BaseURL() != endpoint {
-			c.client = httpclient.NewServiceClient(endpoint, 30*time.Second)
-		}
+	resp, err := c.client.Do(reqHTTP)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
 
-		resp, err := c.client.Get(ctx, fmt.Sprintf("/v1/escrows/%s", escrowID), nil)
-		if err != nil {
-			return err
-		}
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode, string(body))
+	}
 
-		escrow = &Escrow{}
-		return resp.UnmarshalResponse(escrow)
-	})
+	var escrow Escrow
+	if err := json.NewDecoder(resp.Body).Decode(&escrow); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
 
-	return escrow, err
+	return &escrow, nil
 }
 
 // FundEscrow funds an escrow
-func (c *EscrowClient) FundEscrow(ctx context.Context, escrowID, paymentID string) error {
-	return c.circuitBreaker.Execute(ctx, func() error {
-		endpoint, err := c.loadBalancer.GetEndpoint("escrow-service")
-		if err != nil {
-			return fmt.Errorf("failed to get escrow service endpoint: %w", err)
-		}
+func (c *EscrowClient) FundEscrow(ctx context.Context, escrowID string) error {
+	req := map[string]string{"escrow_id": escrowID}
+	data, err := json.Marshal(req)
+	if err != nil {
+		return fmt.Errorf("failed to marshal request: %w", err)
+	}
 
-		if c.client == nil || c.client.BaseURL() != endpoint {
-			c.client = httpclient.NewServiceClient(endpoint, 30*time.Second)
-		}
+	reqHTTP, err := http.NewRequestWithContext(ctx, "POST", c.baseURL+"/v1/escrows/"+escrowID+"/fund", bytes.NewBuffer(data))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+	reqHTTP.Header.Set("Content-Type", "application/json")
 
-		body := map[string]string{"payment_id": paymentID}
-		resp, err := c.client.Post(ctx, fmt.Sprintf("/v1/escrows/%s/fund", escrowID), body, nil)
-		if err != nil {
-			return err
-		}
+	resp, err := c.client.Do(reqHTTP)
+	if err != nil {
+		return fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
 
-		if !resp.IsSuccess() {
-			return fmt.Errorf("failed to fund escrow: %s", string(resp.Body))
-		}
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("failed to fund escrow: %d, body: %s", resp.StatusCode, string(body))
+	}
 
-		return nil
-	})
+	return nil
 }
 
 // ReleaseEscrow releases funds from an escrow
 func (c *EscrowClient) ReleaseEscrow(ctx context.Context, escrowID string) error {
-	return c.circuitBreaker.Execute(ctx, func() error {
-		endpoint, err := c.loadBalancer.GetEndpoint("escrow-service")
-		if err != nil {
-			return fmt.Errorf("failed to get escrow service endpoint: %w", err)
-		}
+	reqHTTP, err := http.NewRequestWithContext(ctx, "POST", c.baseURL+"/v1/escrows/"+escrowID+"/release", nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
 
-		if c.client == nil || c.client.BaseURL() != endpoint {
-			c.client = httpclient.NewServiceClient(endpoint, 30*time.Second)
-		}
+	resp, err := c.client.Do(reqHTTP)
+	if err != nil {
+		return fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
 
-		resp, err := c.client.Post(ctx, fmt.Sprintf("/v1/escrows/%s/release", escrowID), nil, nil)
-		if err != nil {
-			return err
-		}
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("failed to release escrow: %d, body: %s", resp.StatusCode, string(body))
+	}
 
-		if !resp.IsSuccess() {
-			return fmt.Errorf("failed to release escrow: %s", string(resp.Body))
-		}
-
-		return nil
-	})
+	return nil
 }
 
 // CancelEscrow cancels an escrow
 func (c *EscrowClient) CancelEscrow(ctx context.Context, escrowID string) error {
-	return c.circuitBreaker.Execute(ctx, func() error {
-		endpoint, err := c.loadBalancer.GetEndpoint("escrow-service")
-		if err != nil {
-			return fmt.Errorf("failed to get escrow service endpoint: %w", err)
-		}
+	reqHTTP, err := http.NewRequestWithContext(ctx, "POST", c.baseURL+"/v1/escrows/"+escrowID+"/cancel", nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
 
-		if c.client == nil || c.client.BaseURL() != endpoint {
-			c.client = httpclient.NewServiceClient(endpoint, 30*time.Second)
-		}
+	resp, err := c.client.Do(reqHTTP)
+	if err != nil {
+		return fmt.Errorf("failed to send request: %w", err)
+	}
+	defer resp.Body.Close()
 
-		resp, err := c.client.Post(ctx, fmt.Sprintf("/v1/escrows/%s/cancel", escrowID), nil, nil)
-		if err != nil {
-			return err
-		}
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("failed to cancel escrow: %d, body: %s", resp.StatusCode, string(body))
+	}
 
-		if !resp.IsSuccess() {
-			return fmt.Errorf("failed to cancel escrow: %s", string(resp.Body))
-		}
-
-		return nil
-	})
+	return nil
 }

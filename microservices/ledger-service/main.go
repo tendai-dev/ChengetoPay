@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -11,21 +12,45 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	_ "github.com/lib/pq"
 )
 
 // Global services
 var (
 	ledgerService *Service
+	db            *sql.DB
 )
 
 func main() {
 	// Parse command line flags
-	port := flag.String("port", "8084", "Port to listen on")
+	port := flag.String("port", "8082", "Port to listen on")
 	flag.Parse()
 
 	log.Printf("Starting Ledger Microservice on port %s...", *port)
 
-	// Initialize ledger service with mock repository
+	// Initialize database connection
+	var err error
+	postgresURL := getEnv("POSTGRES_URL", "postgres://localhost:5432/chengetopay")
+	db, err = sql.Open("postgres", postgresURL)
+	if err != nil {
+		log.Fatalf("Failed to connect to PostgreSQL: %v", err)
+	}
+	defer db.Close()
+
+	// Configure connection pool
+	db.SetMaxOpenConns(20)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(5 * time.Minute)
+
+	// Test connection
+	if err := db.Ping(); err != nil {
+		log.Fatalf("Failed to ping PostgreSQL: %v", err)
+	}
+
+	log.Printf("✅ PostgreSQL connected for ledger service")
+
+	// Initialize ledger service with mock repository for now
 	ledgerService = NewService(&MockRepository{}, nil)
 
 	// Create router
@@ -76,9 +101,21 @@ func main() {
 
 // handleHealth handles health check requests
 func handleHealth(w http.ResponseWriter, r *http.Request) {
+	// Test database connection
+	var status string = "healthy"
+	if db != nil {
+		if err := db.Ping(); err != nil {
+			status = "unhealthy"
+			w.WriteHeader(http.StatusServiceUnavailable)
+		} else {
+			w.WriteHeader(http.StatusOK)
+		}
+	} else {
+		w.WriteHeader(http.StatusOK)
+	}
+	
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, `{"status":"healthy","service":"ledger","timestamp":"%s"}`, time.Now().Format(time.RFC3339))
+	fmt.Fprintf(w, `{"status":"%s","service":"ledger","timestamp":"%s"}`, status, time.Now().Format(time.RFC3339))
 }
 
 // handleAccounts handles account listing and creation
@@ -186,4 +223,12 @@ func handleBalance(w http.ResponseWriter, r *http.Request) {
 	
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(balance)
+}
+
+// getEnv gets an environment variable with a fallback
+func getEnv(key, fallback string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return fallback
 }

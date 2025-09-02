@@ -10,10 +10,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/chengetopay/shared/database"
-	"github.com/chengetopay/shared/health"
-	"github.com/chengetopay/shared/tracing"
-	"github.com/chengetopay/shared/errors"
+	"github.com/project-x/microservices/shared/database"
+	"github.com/project-x/microservices/shared/health"
+	"github.com/project-x/microservices/shared/tracing"
+	"github.com/project-x/microservices/shared/errors"
 	"github.com/gorilla/mux"
 	"github.com/google/uuid"
 )

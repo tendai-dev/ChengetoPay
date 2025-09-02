@@ -26,90 +26,96 @@ type Service struct {
 func main() {
 	service := &Service{}
 	
-	// Fix PostgreSQL connection
+	// Connect to local PostgreSQL
 	postgresURL := os.Getenv("POSTGRES_URL")
 	if postgresURL == "" {
-		// Use the direct connection string with proper escaping
-		postgresURL = "postgresql://chengetopay_owner:4ixY5mEgxoP0@ep-weathered-bonus-a5eosddm.us-east-2.aws.neon.tech/chengetopay?sslmode=require"
+		// Use local PostgreSQL
+		postgresURL = "postgresql://localhost/chengetopay?sslmode=disable"
 	}
 	
-	// Try alternative connection format for NeonDB
-	if strings.Contains(postgresURL, "neon.tech") {
-		// Add connection parameters to handle SCRAM issue
-		if !strings.Contains(postgresURL, "?") {
-			postgresURL += "?"
-		} else {
-			postgresURL += "&"
-		}
-		postgresURL += "application_name=chengetopay&connect_timeout=10"
-	}
+	// Try local connection first for development
+	localPostgresURL := "postgresql://localhost/chengetopay?sslmode=disable"
 	
 	log.Println("Connecting to PostgreSQL...")
 	var pgErr error
-	service.postgresDB, pgErr = sql.Open("postgres", postgresURL)
-	if pgErr == nil {
-		service.postgresDB.SetMaxOpenConns(5)
-		service.postgresDB.SetMaxIdleConns(2)
-		service.postgresDB.SetConnMaxLifetime(5 * time.Minute)
-		
-		// Test with a simple query instead of Ping
-		var result int
-		pgErr = service.postgresDB.QueryRow("SELECT 1").Scan(&result)
-		if pgErr != nil {
-			log.Printf("⚠️ PostgreSQL: Connection test failed: %v", pgErr)
-			// Continue anyway
+	// Try local first, then cloud
+	for _, url := range []string{localPostgresURL, postgresURL} {
+		if url == localPostgresURL {
+			log.Println("Trying local PostgreSQL...")
 		} else {
-			log.Printf("✅ PostgreSQL: Connected successfully")
+			log.Println("Trying cloud PostgreSQL...")
 		}
-	} else {
-		log.Printf("⚠️ PostgreSQL: Failed to open: %v", pgErr)
-	}
-	
-	// Fix MongoDB connection - use direct connection instead of SRV
-	mongoURL := os.Getenv("MONGODB_URL")
-	if mongoURL == "" || strings.Contains(mongoURL, "mongodb+srv") {
-		// Convert SRV to direct connection format
-		// Extract credentials and cluster name
-		mongoURL = "mongodb://tendaimukurusystemsadministrator:Mukuru@2024@chengetopay.jvjvz.mongodb.net:27017/?retryWrites=true&w=majority"
-		
-		// Try alternative formats
-		mongoURLs := []string{
-			"mongodb://tendaimukurusystemsadministrator:Mukuru%402024@chengetopay.mongodb.net:27017/?retryWrites=true&w=majority",
-			"mongodb://tendaimukurusystemsadministrator:Mukuru@2024@chengetopay-shard-00-00.jvjvz.mongodb.net:27017,chengetopay-shard-00-01.jvjvz.mongodb.net:27017,chengetopay-shard-00-02.jvjvz.mongodb.net:27017/?ssl=true&replicaSet=atlas-xyz-shard-0&authSource=admin&retryWrites=true&w=majority",
-			"mongodb://localhost:27017", // Fallback to local
-		}
-		
-		var mongoErr error
-		for _, url := range mongoURLs {
-			log.Printf("Trying MongoDB connection: %s", strings.Split(url, "@")[0]+"@...")
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		service.postgresDB, pgErr = sql.Open("postgres", url)
+		if pgErr == nil {
+			service.postgresDB.SetMaxOpenConns(5)
+			service.postgresDB.SetMaxIdleConns(2)
+			service.postgresDB.SetConnMaxLifetime(5 * time.Minute)
 			
-			clientOptions := options.Client().ApplyURI(url).SetServerSelectionTimeout(10 * time.Second)
-			mongoClient, err := mongo.Connect(ctx, clientOptions)
-			if err == nil {
-				err = mongoClient.Ping(ctx, nil)
-				if err == nil {
-					service.mongoDB = mongoClient.Database("chengetopay")
-					log.Println("✅ MongoDB: Connected successfully")
-					cancel()
-					break
-				}
+			// Test with a simple query instead of Ping
+			var result int
+			pgErr = service.postgresDB.QueryRow("SELECT 1").Scan(&result)
+			if pgErr != nil {
+				log.Printf("⚠️ PostgreSQL: Connection test failed: %v", pgErr)
+				service.postgresDB.Close()
+				service.postgresDB = nil
+				continue
+			} else {
+				log.Printf("✅ PostgreSQL: Connected successfully")
+				// Create database if it doesn't exist
+				service.postgresDB.Exec("CREATE DATABASE IF NOT EXISTS chengetopay")
+				break
 			}
-			mongoErr = err
-			cancel()
-		}
-		
-		if service.mongoDB == nil {
-			log.Printf("⚠️ MongoDB: All connection attempts failed: %v", mongoErr)
 		}
 	}
 	
-	// Fix Redis connection - try alternative hostnames and local fallback
+	if service.postgresDB == nil {
+		log.Printf("⚠️ PostgreSQL: All connection attempts failed")
+	}
+	
+	// Connect to local MongoDB
+	mongoURL := os.Getenv("MONGODB_URL")
+	if mongoURL == "" {
+		mongoURL = "mongodb://localhost:27017"
+	}
+	
+	// Try local MongoDB first, then cloud if available
+	mongoURLs := []string{
+		"mongodb://localhost:27017", // Local MongoDB
+		mongoURL, // Environment variable if set
+	}
+	
+	var mongoErr error
+	for _, url := range mongoURLs {
+		log.Printf("Trying MongoDB connection: %s", strings.Split(url, "@")[0]+"@...")
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		
+		clientOptions := options.Client().ApplyURI(url).SetServerSelectionTimeout(10 * time.Second)
+		mongoClient, err := mongo.Connect(ctx, clientOptions)
+		if err == nil {
+			err = mongoClient.Ping(ctx, nil)
+			if err == nil {
+				service.mongoDB = mongoClient.Database("chengetopay")
+				log.Println("✅ MongoDB: Connected successfully")
+				cancel()
+				break
+			}
+		}
+		mongoErr = err
+		cancel()
+	}
+	
+	if service.mongoDB == nil {
+		log.Printf("⚠️ MongoDB: All connection attempts failed: %v", mongoErr)
+	}
+	
+	// Connect to local Redis
 	redisURL := os.Getenv("REDIS_URL")
+	if redisURL == "" {
+		redisURL = "redis://localhost:6379"
+	}
 	redisURLs := []string{
-		redisURL,
-		"redis://default:AVNS_Ej1eMBBJAoJy5sTnJCm@redis-chengetopay.aivencloud.com:24660",
-		"redis://localhost:6379",
+		"redis://localhost:6379", // Local Redis first
+		redisURL, // Environment variable if set
 	}
 	
 	var redisErr error
