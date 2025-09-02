@@ -17,7 +17,7 @@ RUN go mod download
 COPY . .
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o workflow-service ./workflow-service
+RUN CGO_ENABLED=0 GOOS=linux go build -o workflow-service main.go
 
 # Final stage
 FROM alpine:latest

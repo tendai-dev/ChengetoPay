@@ -1,0 +1,232 @@
+version: '3.8'
+
+services:
+  # Successfully built services
+  risk-service:
+    image: microservices-risk-service:latest
+    container_name: risk-service
+    ports:
+      - "8085:8085"
+    restart: unless-stopped
+    networks:
+      - microservices_default
+  
+  treasury-service:
+    image: microservices-treasury-service:latest
+    container_name: treasury-service
+    ports:
+      - "8086:8086"
+    restart: unless-stopped
+    networks:
+      - microservices_default
+  
+  evidence-service:
+    image: microservices-evidence-service:latest
+    container_name: evidence-service
+    ports:
+      - "8087:8087"
+    restart: unless-stopped
+    networks:
+      - microservices_default
+  
+  compliance-service:
+    image: microservices-compliance-service:latest
+    container_name: compliance-service
+    ports:
+      - "8088:8088"
+    restart: unless-stopped
+    networks:
+      - microservices_default
+  
+  workflow-service:
+    image: microservices-workflow-service:latest
+    container_name: workflow-service
+    ports:
+      - "8089:8089"
+    restart: unless-stopped
+    networks:
+      - microservices_default
+  
+  journal-service:
+    image: microservices-journal-service:latest
+    container_name: journal-service
+    ports:
+      - "8091:8091"
+    restart: unless-stopped
+    networks:
+      - microservices_default
+  
+  transfers-service:
+    image: microservices-transfers-service:latest
+    container_name: transfers-service
+    ports:
+      - "8094:8094"
+    restart: unless-stopped
+    networks:
+      - microservices_default
+  
+  fx-service:
+    image: microservices-fx-service:latest
+    container_name: fx-service
+    ports:
+      - "8095:8095"
+    restart: unless-stopped
+    networks:
+      - microservices_default
+  
+  payouts-service:
+    image: microservices-payouts-service:latest
+    container_name: payouts-service
+    ports:
+      - "8096:8096"
+    restart: unless-stopped
+    networks:
+      - microservices_default
+  
+  reserves-service:
+    image: microservices-reserves-service:latest
+    container_name: reserves-service
+    ports:
+      - "8097:8097"
+    restart: unless-stopped
+    networks:
+      - microservices_default
+  
+  reconciliation-service:
+    image: microservices-reconciliation-service:latest
+    container_name: reconciliation-service
+    ports:
+      - "8098:8098"
+    restart: unless-stopped
+    networks:
+      - microservices_default
+  
+  kyb-service:
+    image: microservices-kyb-service:latest
+    container_name: kyb-service
+    ports:
+      - "8099:8099"
+    restart: unless-stopped
+    networks:
+      - microservices_default
+  
+  sca-service:
+    image: microservices-sca-service:latest
+    container_name: sca-service
+    ports:
+      - "8100:8100"
+    restart: unless-stopped
+    networks:
+      - microservices_default
+  
+  disputes-service:
+    image: microservices-disputes-service:latest
+    container_name: disputes-service
+    ports:
+      - "8101:8101"
+    restart: unless-stopped
+    networks:
+      - microservices_default
+  
+  dx-service:
+    image: microservices-dx-service:latest
+    container_name: dx-service
+    ports:
+      - "8102:8102"
+    restart: unless-stopped
+    networks:
+      - microservices_default
+  
+  idempotency-service:
+    image: microservices-idempotency-service:latest
+    container_name: idempotency-service
+    ports:
+      - "8104:8104"
+    restart: unless-stopped
+    networks:
+      - microservices_default
+  
+  eventbus-service:
+    image: microservices-eventbus-service:latest
+    container_name: eventbus-service
+    ports:
+      - "8105:8105"
+    restart: unless-stopped
+    networks:
+      - microservices_default
+  
+  saga-service:
+    image: microservices-saga-service:latest
+    container_name: saga-service
+    ports:
+      - "8106:8106"
+    restart: unless-stopped
+    networks:
+      - microservices_default
+  
+  webhooks-service:
+    image: microservices-webhooks-service:latest
+    container_name: webhooks-service
+    ports:
+      - "8108:8108"
+    restart: unless-stopped
+    networks:
+      - microservices_default
+  
+  observability-service:
+    image: microservices-observability-service:latest
+    container_name: observability-service
+    ports:
+      - "8109:8109"
+    restart: unless-stopped
+    networks:
+      - microservices_default
+  
+  config-service:
+    image: microservices-config-service:latest
+    container_name: config-service
+    ports:
+      - "8110:8110"
+    restart: unless-stopped
+    networks:
+      - microservices_default
+  
+  workers-service:
+    image: microservices-workers-service:latest
+    container_name: workers-service
+    ports:
+      - "8111:8111"
+    restart: unless-stopped
+    networks:
+      - microservices_default
+  
+  portal-service:
+    image: microservices-portal-service:latest
+    container_name: portal-service
+    ports:
+      - "8112:8112"
+    restart: unless-stopped
+    networks:
+      - microservices_default
+  
+  data-platform-service:
+    image: microservices-data-platform-service:latest
+    container_name: data-platform-service
+    ports:
+      - "8113:8113"
+    restart: unless-stopped
+    networks:
+      - microservices_default
+  
+  compliance-ops-service:
+    image: microservices-compliance-ops-service:latest
+    container_name: compliance-ops-service
+    ports:
+      - "8114:8114"
+    restart: unless-stopped
+    networks:
+      - microservices_default
+
+networks:
+  microservices_default:
+    external: true

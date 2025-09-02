@@ -1,0 +1,87 @@
+{
+  "dashboard": {
+    "title": "Business Services Metrics",
+    "panels": [
+      {
+        "title": "Transaction Volume",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{service=\"payment-service\"}[5m])) by (service)",
+            "legendFormat": "Payments"
+          },
+          {
+            "expr": "sum(rate(http_requests_total{service=\"escrow-service\"}[5m])) by (service)",
+            "legendFormat": "Escrows"
+          },
+          {
+            "expr": "sum(rate(http_requests_total{service=\"transfers-service\"}[5m])) by (service)",
+            "legendFormat": "Transfers"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
+      },
+      {
+        "title": "Response Times (p95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{service}}"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
+      },
+      {
+        "title": "Error Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{status=~\"5..\"}[5m])) by (service)",
+            "legendFormat": "{{service}}"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 }
+      },
+      {
+        "title": "Active Services",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "count(up{job=~\".*service.*\"} == 1)",
+            "legendFormat": "Running Services"
+          }
+        ],
+        "gridPos": { "h": 4, "w": 6, "x": 12, "y": 8 }
+      },
+      {
+        "title": "Total Requests/sec",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total[5m]))",
+            "legendFormat": "Requests/sec"
+          }
+        ],
+        "gridPos": { "h": 4, "w": 6, "x": 18, "y": 8 }
+      },
+      {
+        "title": "Success Rate",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "(sum(rate(http_requests_total{status=~\"2..\"}[5m])) / sum(rate(http_requests_total[5m]))) * 100",
+            "legendFormat": "Success %"
+          }
+        ],
+        "gridPos": { "h": 4, "w": 12, "x": 12, "y": 12 }
+      }
+    ],
+    "refresh": "5s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "version": 1
+  }
+}

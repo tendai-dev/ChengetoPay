@@ -17,7 +17,7 @@ RUN go mod download
 COPY . .
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o compliance-ops-service ./compliance-ops-service
+RUN CGO_ENABLED=0 GOOS=linux go build -o compliance-ops-service main.go
 
 # Final stage
 FROM alpine:latest

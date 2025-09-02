@@ -17,7 +17,7 @@ RUN go mod download
 COPY . .
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o payouts-service ./payouts-service
+RUN CGO_ENABLED=0 GOOS=linux go build -o payouts-service main.go
 
 # Final stage
 FROM alpine:latest

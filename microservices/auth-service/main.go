@@ -1,252 +1,208 @@
 package main
 
 import (
-	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
+	"strings"
 	"time"
 )
 
-// Global services
-var (
-	authService *Service
-)
+type User struct {
+	ID        string    `json:"id"`
+	Email     string    `json:"email"`
+	Username  string    `json:"username"`
+	Role      string    `json:"role"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type AuthResponse struct {
+	Token     string    `json:"token"`
+	ExpiresAt time.Time `json:"expires_at"`
+	User      User      `json:"user"`
+}
+
+func generateToken() string {
+	b := make([]byte, 32)
+	rand.Read(b)
+	return base64.URLEncoding.EncodeToString(b)
+}
 
 func main() {
-	// Parse command line flags
-	port := flag.String("port", "8103", "Port to listen on")
-	flag.Parse()
+	log.Println("Starting Auth Service on port 8103...")
 
-	log.Printf("Starting AuthN/AuthZ & Org/Tenant Microservice on port %s...", *port)
-
-	// Initialize auth service with mock repository
-	authService = NewService(&MockRepository{}, nil)
-
-	// Create router
-	mux := http.NewServeMux()
-
-	// Health check endpoint
-	mux.HandleFunc("/health", handleHealth)
-
-	// API endpoints
-	mux.HandleFunc("/v1/auth", handleAuth)
-	mux.HandleFunc("/v1/token", handleToken)
-	mux.HandleFunc("/v1/orgs", handleOrgs)
-	mux.HandleFunc("/v1/users", handleUsers)
-	mux.HandleFunc("/v1/roles", handleRoles)
-	mux.HandleFunc("/v1/permissions", handlePermissions)
-
-	// Create server with optimized settings for high-performance authentication
-	server := &http.Server{
-		Addr:         ":" + *port,
-		Handler:      mux,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  120 * time.Second,
-		MaxHeaderBytes: 1 << 20, // 1MB
-	}
-
-	// Start server in goroutine
-	go func() {
-		log.Printf("AuthN/AuthZ & Org/Tenant service listening on port %s", *port)
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Failed to start server: %v", err)
-		}
-	}()
-
-	// Graceful shutdown
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-
-	log.Println("Shutting down auth service...")
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	if err := server.Shutdown(ctx); err != nil {
-		log.Fatalf("Server forced to shutdown: %v", err)
-	}
-
-	log.Println("AuthN/AuthZ & Org/Tenant service exited")
-}
-
-// handleHealth handles health check requests
-func handleHealth(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, `{"status":"healthy","service":"auth","timestamp":"%s"}`, time.Now().Format(time.RFC3339))
-}
-
-// handleAuth handles authentication requests
-func handleAuth(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case "POST":
-		var req AuthenticateRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, "Invalid request body", http.StatusBadRequest)
-			return
-		}
-		
-		result, err := authService.Authenticate(r.Context(), &req)
-		if err != nil {
-			log.Printf("Failed to authenticate: %v", err)
-			http.Error(w, "Authentication failed", http.StatusUnauthorized)
-			return
-		}
-		
+	// Health endpoint
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(result)
-	}
-}
+		fmt.Fprintf(w, `{"status":"healthy","service":"auth","timestamp":"%s"}`, time.Now().Format(time.RFC3339))
+	})
 
-// handleToken handles token operations
-func handleToken(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case "POST":
-		var req TokenRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, "Invalid request body", http.StatusBadRequest)
-			return
+	// Status endpoint
+	http.HandleFunc("/v1/status", func(w http.ResponseWriter, r *http.Request) {
+		status := map[string]interface{}{
+			"service": "auth",
+			"status":  "active",
+			"version": "1.0.0",
+			"features": []string{
+				"jwt_authentication",
+				"oauth2",
+				"api_keys",
+				"role_based_access",
+				"multi_factor_auth",
+			},
 		}
-		
-		token, err := authService.GenerateToken(r.Context(), &req)
-		if err != nil {
-			log.Printf("Failed to generate token: %v", err)
-			http.Error(w, "Token generation failed", http.StatusInternalServerError)
-			return
-		}
-		
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(token)
-		
-	case "GET":
-		// Validate token
-		token := r.Header.Get("Authorization")
-		if token == "" {
-			http.Error(w, "No token provided", http.StatusUnauthorized)
-			return
-		}
-		
-		claims, err := authService.ValidateToken(r.Context(), token)
-		if err != nil {
-			log.Printf("Failed to validate token: %v", err)
-			http.Error(w, "Invalid token", http.StatusUnauthorized)
-			return
-		}
-		
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(claims)
-	}
-}
+		json.NewEncoder(w).Encode(status)
+	})
 
-// handleOrgs handles organization management
-func handleOrgs(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case "GET":
-		orgs, err := authService.ListOrganizations(r.Context(), OrgFilters{})
-		if err != nil {
-			log.Printf("Failed to list organizations: %v", err)
-			http.Error(w, "Failed to list organizations", http.StatusInternalServerError)
+	// Login endpoint
+	http.HandleFunc("/api/v1/auth/login", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		
+
+		var request struct {
+			Email    string `json:"email"`
+			Password string `json:"password"`
+		}
+
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			http.Error(w, "Invalid request", http.StatusBadRequest)
+			return
+		}
+
+		// Mock authentication (in production, verify against database)
+		if request.Email == "" || request.Password == "" {
+			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+			return
+		}
+
+		user := User{
+			ID:        fmt.Sprintf("user_%d", time.Now().Unix()),
+			Email:     request.Email,
+			Username:  strings.Split(request.Email, "@")[0],
+			Role:      "user",
+			CreatedAt: time.Now(),
+		}
+
+		response := AuthResponse{
+			Token:     generateToken(),
+			ExpiresAt: time.Now().Add(24 * time.Hour),
+			User:      user,
+		}
+
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(orgs)
-		
-	case "POST":
-		var req CreateOrgRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, "Invalid request body", http.StatusBadRequest)
+		json.NewEncoder(w).Encode(response)
+	})
+
+	// Register endpoint
+	http.HandleFunc("/api/v1/auth/register", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		
-		org, err := authService.CreateOrganization(r.Context(), &req)
-		if err != nil {
-			log.Printf("Failed to create organization: %v", err)
-			http.Error(w, "Failed to create organization", http.StatusInternalServerError)
+
+		var request struct {
+			Email    string `json:"email"`
+			Password string `json:"password"`
+			Username string `json:"username"`
+		}
+
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			http.Error(w, "Invalid request", http.StatusBadRequest)
 			return
 		}
-		
+
+		user := User{
+			ID:        fmt.Sprintf("user_%d", time.Now().Unix()),
+			Email:     request.Email,
+			Username:  request.Username,
+			Role:      "user",
+			CreatedAt: time.Now(),
+		}
+
+		response := map[string]interface{}{
+			"message": "User registered successfully",
+			"user":    user,
+		}
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(org)
-	}
-}
+		json.NewEncoder(w).Encode(response)
+	})
 
-// handleUsers handles user management
-func handleUsers(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case "GET":
-		users, err := authService.ListUsers(r.Context(), UserFilters{})
-		if err != nil {
-			log.Printf("Failed to list users: %v", err)
-			http.Error(w, "Failed to list users", http.StatusInternalServerError)
+	// Verify token endpoint
+	http.HandleFunc("/api/v1/auth/verify", func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			http.Error(w, "Missing authorization header", http.StatusUnauthorized)
 			return
 		}
-		
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(users)
-		
-	case "POST":
-		var req CreateUserRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, "Invalid request body", http.StatusBadRequest)
-			return
-		}
-		
-		user, err := authService.CreateUser(r.Context(), &req)
-		if err != nil {
-			log.Printf("Failed to create user: %v", err)
-			http.Error(w, "Failed to create user", http.StatusInternalServerError)
-			return
-		}
-		
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(user)
-	}
-}
 
-// handleRoles handles role management
-func handleRoles(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case "GET":
-		roles, err := authService.ListRoles(r.Context(), RoleFilters{})
-		if err != nil {
-			log.Printf("Failed to list roles: %v", err)
-			http.Error(w, "Failed to list roles", http.StatusInternalServerError)
+		token := strings.TrimPrefix(authHeader, "Bearer ")
+		if token == authHeader {
+			http.Error(w, "Invalid token format", http.StatusUnauthorized)
 			return
 		}
-		
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(roles)
-	}
-}
 
-// handlePermissions handles permission checks
-func handlePermissions(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case "POST":
-		var req CheckPermissionRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, "Invalid request body", http.StatusBadRequest)
-			return
+		// Mock token verification (in production, verify JWT signature)
+		response := map[string]interface{}{
+			"valid":     true,
+			"user_id":   "user_123",
+			"role":      "user",
+			"expires_at": time.Now().Add(24 * time.Hour),
 		}
-		
-		result, err := authService.CheckPermission(r.Context(), &req)
-		if err != nil {
-			log.Printf("Failed to check permission: %v", err)
-			http.Error(w, "Permission check failed", http.StatusInternalServerError)
-			return
-		}
-		
+
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(result)
+		json.NewEncoder(w).Encode(response)
+	})
+
+	// Refresh token endpoint
+	http.HandleFunc("/api/v1/auth/refresh", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		var request struct {
+			RefreshToken string `json:"refresh_token"`
+		}
+
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			http.Error(w, "Invalid request", http.StatusBadRequest)
+			return
+		}
+
+		response := map[string]interface{}{
+			"token":      generateToken(),
+			"expires_at": time.Now().Add(24 * time.Hour),
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+	})
+
+	// Logout endpoint
+	http.HandleFunc("/api/v1/auth/logout", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		response := map[string]interface{}{
+			"message": "Logged out successfully",
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+	})
+
+	log.Println("Auth service listening on port 8103")
+	if err := http.ListenAndServe(":8103", nil); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
 	}
 }

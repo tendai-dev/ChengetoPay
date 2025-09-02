@@ -1,0 +1,360 @@
+version: '3.8'
+
+services:
+  # Already running services
+  api-gateway:
+    image: microservices-api-gateway:latest
+    container_name: api-gateway
+    ports:
+      - "8090:8090"
+    networks:
+      - financial_network
+      
+  database-service:
+    image: microservices-database-service:latest
+    container_name: database-service
+    ports:
+      - "8115:8115"
+    networks:
+      - financial_network
+      
+  monitoring-service:
+    image: microservices-monitoring-service:latest
+    container_name: monitoring-service
+    ports:
+      - "8116:8116"
+    networks:
+      - financial_network
+      
+  message-queue-service:
+    image: microservices-message-queue-service:latest
+    container_name: message-queue-service
+    ports:
+      - "8117:8117"
+    networks:
+      - financial_network
+      
+  service-discovery:
+    image: microservices-service-discovery:latest
+    container_name: service-discovery
+    ports:
+      - "8118:8118"
+    networks:
+      - financial_network
+      
+  vault-service:
+    image: microservices-vault-service:latest
+    container_name: vault-service-app
+    ports:
+      - "8119:8119"
+    networks:
+      - financial_network
+      
+  escrow-service:
+    image: microservices-escrow-service:latest
+    container_name: escrow-service
+    ports:
+      - "8081:8081"
+    networks:
+      - financial_network
+      
+  payment-service:
+    image: microservices-payment-service:latest
+    container_name: payment-service
+    ports:
+      - "8083:8083"
+    networks:
+      - financial_network
+      
+  ledger-service:
+    image: microservices-ledger-service:latest
+    container_name: ledger-service
+    ports:
+      - "8084:8084"
+    networks:
+      - financial_network
+
+  # New services to add
+  risk-service:
+    build:
+      context: risk-service
+      dockerfile: Dockerfile
+    container_name: risk-service
+    ports:
+      - "8085:8085"
+    networks:
+      - financial_network
+      
+  treasury-service:
+    build:
+      context: treasury-service
+      dockerfile: Dockerfile
+    container_name: treasury-service
+    ports:
+      - "8086:8086"
+    networks:
+      - financial_network
+      
+  evidence-service:
+    build:
+      context: evidence-service
+      dockerfile: Dockerfile
+    container_name: evidence-service
+    ports:
+      - "8087:8087"
+    networks:
+      - financial_network
+      
+  compliance-service:
+    build:
+      context: compliance-service
+      dockerfile: Dockerfile
+    container_name: compliance-service
+    ports:
+      - "8088:8088"
+    networks:
+      - financial_network
+      
+  workflow-service:
+    build:
+      context: workflow-service
+      dockerfile: Dockerfile
+    container_name: workflow-service
+    ports:
+      - "8089:8089"
+    networks:
+      - financial_network
+      
+  journal-service:
+    build:
+      context: journal-service
+      dockerfile: Dockerfile
+    container_name: journal-service
+    ports:
+      - "8091:8091"
+    networks:
+      - financial_network
+      
+  fees-service:
+    build:
+      context: fees-service
+      dockerfile: Dockerfile
+    container_name: fees-service
+    ports:
+      - "8092:8092"
+    networks:
+      - financial_network
+      
+  refunds-service:
+    build:
+      context: refunds-service
+      dockerfile: Dockerfile
+    container_name: refunds-service
+    ports:
+      - "8093:8093"
+    networks:
+      - financial_network
+      
+  transfers-service:
+    build:
+      context: transfers-service
+      dockerfile: Dockerfile
+    container_name: transfers-service
+    ports:
+      - "8094:8094"
+    networks:
+      - financial_network
+      
+  fx-service:
+    build:
+      context: fx-service
+      dockerfile: Dockerfile
+    container_name: fx-service
+    ports:
+      - "8095:8095"
+    networks:
+      - financial_network
+      
+  payouts-service:
+    build:
+      context: payouts-service
+      dockerfile: Dockerfile
+    container_name: payouts-service
+    ports:
+      - "8096:8096"
+    networks:
+      - financial_network
+      
+  reserves-service:
+    build:
+      context: reserves-service
+      dockerfile: Dockerfile
+    container_name: reserves-service
+    ports:
+      - "8097:8097"
+    networks:
+      - financial_network
+      
+  reconciliation-service:
+    build:
+      context: reconciliation-service
+      dockerfile: Dockerfile
+    container_name: reconciliation-service
+    ports:
+      - "8098:8098"
+    networks:
+      - financial_network
+      
+  kyb-service:
+    build:
+      context: kyb-service
+      dockerfile: Dockerfile
+    container_name: kyb-service
+    ports:
+      - "8099:8099"
+    networks:
+      - financial_network
+      
+  sca-service:
+    build:
+      context: sca-service
+      dockerfile: Dockerfile
+    container_name: sca-service
+    ports:
+      - "8100:8100"
+    networks:
+      - financial_network
+      
+  disputes-service:
+    build:
+      context: disputes-service
+      dockerfile: Dockerfile
+    container_name: disputes-service
+    ports:
+      - "8101:8101"
+    networks:
+      - financial_network
+      
+  dx-service:
+    build:
+      context: dx-service
+      dockerfile: Dockerfile
+    container_name: dx-service
+    ports:
+      - "8102:8102"
+    networks:
+      - financial_network
+      
+  auth-service:
+    build:
+      context: auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "8103:8103"
+    networks:
+      - financial_network
+      
+  idempotency-service:
+    build:
+      context: idempotency-service
+      dockerfile: Dockerfile
+    container_name: idempotency-service
+    ports:
+      - "8104:8104"
+    networks:
+      - financial_network
+      
+  eventbus-service:
+    build:
+      context: eventbus-service
+      dockerfile: Dockerfile
+    container_name: eventbus-service
+    ports:
+      - "8105:8105"
+    networks:
+      - financial_network
+      
+  saga-service:
+    build:
+      context: saga-service
+      dockerfile: Dockerfile
+    container_name: saga-service
+    ports:
+      - "8106:8106"
+    networks:
+      - financial_network
+      
+  webhooks-service:
+    build:
+      context: webhooks-service
+      dockerfile: Dockerfile
+    container_name: webhooks-service
+    ports:
+      - "8108:8108"
+    networks:
+      - financial_network
+      
+  observability-service:
+    build:
+      context: observability-service
+      dockerfile: Dockerfile
+    container_name: observability-service
+    ports:
+      - "8109:8109"
+    networks:
+      - financial_network
+      
+  config-service:
+    build:
+      context: config-service
+      dockerfile: Dockerfile
+    container_name: config-service
+    ports:
+      - "8110:8110"
+    networks:
+      - financial_network
+      
+  workers-service:
+    build:
+      context: workers-service
+      dockerfile: Dockerfile
+    container_name: workers-service
+    ports:
+      - "8111:8111"
+    networks:
+      - financial_network
+      
+  portal-service:
+    build:
+      context: portal-service
+      dockerfile: Dockerfile
+    container_name: portal-service
+    ports:
+      - "8112:8112"
+    networks:
+      - financial_network
+      
+  data-platform-service:
+    build:
+      context: data-platform-service
+      dockerfile: Dockerfile
+    container_name: data-platform-service
+    ports:
+      - "8113:8113"
+    networks:
+      - financial_network
+      
+  compliance-ops-service:
+    build:
+      context: compliance-ops-service
+      dockerfile: Dockerfile
+    container_name: compliance-ops-service
+    ports:
+      - "8114:8114"
+    networks:
+      - financial_network
+
+networks:
+  financial_network:
+    external: true

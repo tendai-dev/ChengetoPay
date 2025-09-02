@@ -17,7 +17,7 @@ RUN go mod download
 COPY . .
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o config-service ./config-service
+RUN CGO_ENABLED=0 GOOS=linux go build -o config-service main.go
 
 # Final stage
 FROM alpine:latest
