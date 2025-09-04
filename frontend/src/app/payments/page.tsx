@@ -88,7 +88,7 @@ export default function PaymentsPage() {
       })
       
       toast.success('Payment initiated successfully!')
-      router.push(`/payments/${response.data.id}`)
+      router.push(`/payments/${(response.data as any)?.id || 'new'}`)
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Payment failed')
     } finally {

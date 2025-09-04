@@ -22,6 +22,7 @@ services:
       retries: 5
     networks:
       - local_db_network
+      - financial_network
 
   mongodb-local:
     image: mongo:6
@@ -41,6 +42,7 @@ services:
       retries: 5
     networks:
       - local_db_network
+      - financial_network
 
   redis-local:
     image: redis:7-alpine
@@ -106,3 +108,5 @@ volumes:
 networks:
   local_db_network:
     driver: bridge
+  financial_network:
+    external: true

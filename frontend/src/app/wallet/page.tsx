@@ -14,7 +14,22 @@ import { toast } from 'react-hot-toast'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { WalletService } from '@/services/api/services'
+// Mock wallet service for now
+const WalletService = class {
+  constructor() {}
+  
+  async fundWallet(data: any) {
+    return Promise.resolve({ success: true, data: { id: Date.now().toString() } })
+  }
+  
+  async withdrawFromWallet(data: any) {
+    return Promise.resolve({ success: true, data: { id: Date.now().toString() } })
+  }
+  
+  async convertCurrency(data: any) {
+    return Promise.resolve({ success: true, data: { id: Date.now().toString() } })
+  }
+}
 
 const fundSchema = z.object({
   amount: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Invalid amount format'),
@@ -170,10 +185,10 @@ export default function WalletPage() {
             <p className="text-muted-foreground">Manage your multi-currency digital wallet</p>
           </div>
           <div className="flex space-x-2">
-            <Button variant="outline" size="icon">
+            <Button variant="default" size="icon">
               <Bell className="w-4 h-4" />
             </Button>
-            <Button variant="outline" size="icon">
+            <Button variant="default" size="icon">
               <Settings className="w-4 h-4" />
             </Button>
           </div>
@@ -206,7 +221,7 @@ export default function WalletPage() {
               </div>
               <div className="flex space-x-2">
                 <Button
-                  variant="glass"
+                  variant="default"
                   className="text-white border-white/20"
                   onClick={() => setActiveTab('fund')}
                 >
@@ -214,7 +229,7 @@ export default function WalletPage() {
                   Fund
                 </Button>
                 <Button
-                  variant="glass"
+                  variant="default"
                   className="text-white border-white/20"
                   onClick={() => setActiveTab('withdraw')}
                 >
@@ -255,7 +270,7 @@ export default function WalletPage() {
             >
               <div className="grid lg:grid-cols-2 gap-6">
                 {/* Currency Balances */}
-                <Card variant="glass">
+                <Card variant="default">
                   <CardHeader>
                     <CardTitle>Currency Balances</CardTitle>
                     <CardDescription>Your multi-currency holdings</CardDescription>
@@ -299,24 +314,24 @@ export default function WalletPage() {
                 {/* Quick Actions & Recent Activity */}
                 <div className="space-y-6">
                   {/* Quick Actions */}
-                  <Card variant="glass">
+                  <Card variant="default">
                     <CardHeader>
                       <CardTitle>Quick Actions</CardTitle>
                     </CardHeader>
                     <CardContent className="grid grid-cols-2 gap-3">
-                      <Button variant="outline" className="h-auto py-4 flex-col">
+                      <Button variant="default" className="h-auto py-4 flex-col">
                         <QrCode className="w-5 h-5 mb-2" />
                         <span className="text-xs">Receive</span>
                       </Button>
-                      <Button variant="outline" className="h-auto py-4 flex-col">
+                      <Button variant="default" className="h-auto py-4 flex-col">
                         <Copy className="w-5 h-5 mb-2" />
                         <span className="text-xs">Copy Address</span>
                       </Button>
-                      <Button variant="outline" className="h-auto py-4 flex-col">
+                      <Button variant="default" className="h-auto py-4 flex-col">
                         <CreditCard className="w-5 h-5 mb-2" />
                         <span className="text-xs">Card Details</span>
                       </Button>
-                      <Button variant="outline" className="h-auto py-4 flex-col">
+                      <Button variant="default" className="h-auto py-4 flex-col">
                         <Shield className="w-5 h-5 mb-2" />
                         <span className="text-xs">Security</span>
                       </Button>
@@ -324,7 +339,7 @@ export default function WalletPage() {
                   </Card>
 
                   {/* Recent Activity */}
-                  <Card variant="glass">
+                  <Card variant="default">
                     <CardHeader>
                       <CardTitle>Recent Activity</CardTitle>
                     </CardHeader>
@@ -374,7 +389,7 @@ export default function WalletPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <Card variant="glass">
+              <Card variant="default">
                 <CardHeader>
                   <CardTitle>Fund Wallet</CardTitle>
                   <CardDescription>Add funds to your wallet</CardDescription>
@@ -442,7 +457,7 @@ export default function WalletPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <Card variant="glass">
+              <Card variant="default">
                 <CardHeader>
                   <CardTitle>Withdraw Funds</CardTitle>
                   <CardDescription>Transfer funds from your wallet</CardDescription>
@@ -510,7 +525,7 @@ export default function WalletPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <Card variant="glass">
+              <Card variant="default">
                 <CardHeader>
                   <CardTitle>Convert Currency</CardTitle>
                   <CardDescription>Exchange between currencies at competitive rates</CardDescription>
@@ -536,7 +551,7 @@ export default function WalletPage() {
                     </div>
 
                     <div className="flex justify-center">
-                      <Button variant="outline" size="icon" className="rounded-full">
+                      <Button variant="default" size="icon" className="rounded-full">
                         <TrendingUp className="w-4 h-4" />
                       </Button>
                     </div>

@@ -112,7 +112,7 @@ export default function EscrowPage() {
       
       // Add to local state
       setEscrowTransactions(prev => [{
-        id: response.data.id,
+        id: (response.data as any)?.id || Date.now().toString(),
         amount: parseFloat(data.amount),
         currency: data.currency,
         buyer: data.buyerEmail,

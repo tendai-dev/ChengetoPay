@@ -278,11 +278,661 @@ services:
       - "8084:8084"
     environment:
       - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
     depends_on:
       - database-service
       - message-queue-service
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8084/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - financial_network
+
+  # Additional Business Services
+  risk-service:
+    build:
+      context: ./risk-service
+      dockerfile: Dockerfile
+    container_name: risk-service
+    ports:
+      - "8085:8085"
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
+    depends_on:
+      - database-service
+      - message-queue-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8085/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - financial_network
+
+  treasury-service:
+    build:
+      context: ./treasury-service
+      dockerfile: Dockerfile
+    container_name: treasury-service
+    ports:
+      - "8086:8086"
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
+    depends_on:
+      - database-service
+      - message-queue-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8086/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - financial_network
+
+  evidence-service:
+    build:
+      context: ./evidence-service
+      dockerfile: Dockerfile
+    container_name: evidence-service
+    ports:
+      - "8087:8087"
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
+    depends_on:
+      - database-service
+      - message-queue-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8087/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - financial_network
+
+  compliance-service:
+    build:
+      context: ./compliance-service
+      dockerfile: Dockerfile
+    container_name: compliance-service
+    ports:
+      - "8088:8088"
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
+    depends_on:
+      - database-service
+      - message-queue-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8088/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - financial_network
+
+  workflow-service:
+    build:
+      context: ./workflow-service
+      dockerfile: Dockerfile
+    container_name: workflow-service
+    ports:
+      - "8089:8089"
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
+    depends_on:
+      - database-service
+      - message-queue-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8089/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - financial_network
+
+  journal-service:
+    build:
+      context: ./journal-service
+      dockerfile: Dockerfile
+    container_name: journal-service
+    ports:
+      - "8091:8091"
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
+    depends_on:
+      - database-service
+      - message-queue-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8091/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - financial_network
+
+  fees-service:
+    build:
+      context: ./fees-service
+      dockerfile: Dockerfile
+    container_name: fees-service
+    ports:
+      - "8092:8092"
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
+    depends_on:
+      - database-service
+      - message-queue-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8092/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - financial_network
+
+  refunds-service:
+    build:
+      context: ./refunds-service
+      dockerfile: Dockerfile
+    container_name: refunds-service
+    ports:
+      - "8093:8093"
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
+    depends_on:
+      - database-service
+      - message-queue-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8093/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - financial_network
+
+  transfers-service:
+    build:
+      context: ./transfers-service
+      dockerfile: Dockerfile
+    container_name: transfers-service
+    ports:
+      - "8094:8094"
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
+    depends_on:
+      - database-service
+      - message-queue-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8094/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - financial_network
+
+  fx-service:
+    build:
+      context: ./fx-service
+      dockerfile: Dockerfile
+    container_name: fx-service
+    ports:
+      - "8095:8095"
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
+    depends_on:
+      - database-service
+      - message-queue-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8095/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - financial_network
+
+  payouts-service:
+    build:
+      context: ./payouts-service
+      dockerfile: Dockerfile
+    container_name: payouts-service
+    ports:
+      - "8096:8096"
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
+    depends_on:
+      - database-service
+      - message-queue-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8096/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - financial_network
+
+  reserves-service:
+    build:
+      context: ./reserves-service
+      dockerfile: Dockerfile
+    container_name: reserves-service
+    ports:
+      - "8097:8097"
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
+    depends_on:
+      - database-service
+      - message-queue-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8097/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - financial_network
+
+  reconciliation-service:
+    build:
+      context: ./reconciliation-service
+      dockerfile: Dockerfile
+    container_name: reconciliation-service
+    ports:
+      - "8098:8098"
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
+    depends_on:
+      - database-service
+      - message-queue-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8098/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - financial_network
+
+  kyb-service:
+    build:
+      context: ./kyb-service
+      dockerfile: Dockerfile
+    container_name: kyb-service
+    ports:
+      - "8099:8099"
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
+    depends_on:
+      - database-service
+      - message-queue-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8099/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - financial_network
+
+  sca-service:
+    build:
+      context: ./sca-service
+      dockerfile: Dockerfile
+    container_name: sca-service
+    ports:
+      - "8100:8100"
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
+    depends_on:
+      - database-service
+      - message-queue-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8100/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - financial_network
+
+  disputes-service:
+    build:
+      context: ./disputes-service
+      dockerfile: Dockerfile
+    container_name: disputes-service
+    ports:
+      - "8101:8101"
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
+    depends_on:
+      - database-service
+      - message-queue-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8101/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - financial_network
+
+  dx-service:
+    build:
+      context: ./dx-service
+      dockerfile: Dockerfile
+    container_name: dx-service
+    ports:
+      - "8102:8102"
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
+    depends_on:
+      - database-service
+      - message-queue-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8102/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - financial_network
+
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "8103:8103"
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
+    depends_on:
+      - database-service
+      - message-queue-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8103/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - financial_network
+
+  idempotency-service:
+    build:
+      context: ./idempotency-service
+      dockerfile: Dockerfile
+    container_name: idempotency-service
+    ports:
+      - "8104:8104"
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
+    depends_on:
+      - database-service
+      - message-queue-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8104/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - financial_network
+
+  eventbus-service:
+    build:
+      context: ./eventbus-service
+      dockerfile: Dockerfile
+    container_name: eventbus-service
+    ports:
+      - "8105:8105"
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
+    depends_on:
+      - database-service
+      - message-queue-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8105/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - financial_network
+
+  saga-service:
+    build:
+      context: ./saga-service
+      dockerfile: Dockerfile
+    container_name: saga-service
+    ports:
+      - "8106:8106"
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
+    depends_on:
+      - database-service
+      - message-queue-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8106/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - financial_network
+
+  webhooks-service:
+    build:
+      context: ./webhooks-service
+      dockerfile: Dockerfile
+    container_name: webhooks-service
+    ports:
+      - "8108:8108"
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
+    depends_on:
+      - database-service
+      - message-queue-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8108/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - financial_network
+
+  observability-service:
+    build:
+      context: ./observability-service
+      dockerfile: Dockerfile
+    container_name: observability-service
+    ports:
+      - "8109:8109"
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
+    depends_on:
+      - database-service
+      - message-queue-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8109/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - financial_network
+
+  config-service:
+    build:
+      context: ./config-service
+      dockerfile: Dockerfile
+    container_name: config-service
+    ports:
+      - "8110:8110"
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
+    depends_on:
+      - database-service
+      - message-queue-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8110/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - financial_network
+
+  workers-service:
+    build:
+      context: ./workers-service
+      dockerfile: Dockerfile
+    container_name: workers-service
+    ports:
+      - "8111:8111"
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
+    depends_on:
+      - database-service
+      - message-queue-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8111/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - financial_network
+
+  portal-service:
+    build:
+      context: ./portal-service
+      dockerfile: Dockerfile
+    container_name: portal-service
+    ports:
+      - "8112:8112"
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
+    depends_on:
+      - database-service
+      - message-queue-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8112/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - financial_network
+
+  data-platform-service:
+    build:
+      context: ./data-platform-service
+      dockerfile: Dockerfile
+    container_name: data-platform-service
+    ports:
+      - "8113:8113"
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
+    depends_on:
+      - database-service
+      - message-queue-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8113/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - financial_network
+
+  compliance-ops-service:
+    build:
+      context: ./compliance-ops-service
+      dockerfile: Dockerfile
+    container_name: compliance-ops-service
+    ports:
+      - "8114:8114"
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_URL=postgres://postgres:postgres@postgres-local:5432/chengetopay?sslmode=disable
+      - MONGODB_URL=mongodb://mongodb-local:27017/chengetopay
+      - REDIS_URL=redis://redis-local:6379
+    depends_on:
+      - database-service
+      - message-queue-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8114/health"]
       interval: 30s
       timeout: 10s
       retries: 5

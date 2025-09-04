@@ -25,7 +25,8 @@ import {
   Legend,
   Filler
 } from 'chart.js'
-import wsClient from '@/services/websocket/client'
+// WebSocket client will be imported dynamically on client side
+let wsClient: any = null
 import { format } from 'date-fns'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -85,24 +86,41 @@ export default function DashboardPage() {
       return
     }
 
-    // Connect WebSocket
-    const token = localStorage.getItem('accessToken')
-    if (token) {
-      wsClient.connect(token)
-      
-      // Subscribe to real-time updates
-      wsClient.subscribeToPaymentUpdates((data) => {
-        setRecentTransactions(prev => [data, ...prev].slice(0, 10))
-        setStats(prev => ({
-          ...prev,
-          totalRevenue: prev.totalRevenue + data.amount,
-          totalTransactions: prev.totalTransactions + 1,
-        }))
-      })
+    // Only run on client side
+    if (typeof window === 'undefined') return
+
+    // Dynamically import WebSocket client
+    const initWebSocket = async () => {
+      try {
+        const { default: WebSocketClientInstance } = await import('@/services/websocket/client')
+        wsClient = WebSocketClientInstance
+        
+        // Connect WebSocket
+        const token = localStorage.getItem('accessToken')
+        if (token) {
+          wsClient.connect(token)
+          
+          // Subscribe to real-time updates
+          wsClient.subscribeToPayments((data: any) => {
+            setRecentTransactions(prev => [data, ...prev].slice(0, 10))
+            setStats(prev => ({
+              ...prev,
+              totalRevenue: prev.totalRevenue + data.amount,
+              totalTransactions: prev.totalTransactions + 1,
+            }))
+          })
+        }
+      } catch (error) {
+        console.error('Failed to initialize WebSocket:', error)
+      }
     }
 
+    initWebSocket()
+
     return () => {
-      wsClient.disconnect()
+      if (wsClient) {
+        wsClient.disconnect()
+      }
     }
   }, [isAuthenticated, router])
 

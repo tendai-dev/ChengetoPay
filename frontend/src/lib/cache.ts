@@ -179,7 +179,7 @@ export const cacheInvalidation = {
     }
 
     const patterns = invalidationMap[entity][action]
-    cacheInvalidation.invalidateMultiple(queryClient, patterns)
+    cacheInvalidation.invalidateMultiple(queryClient, patterns.map(pattern => [...pattern]))
   },
 }
 

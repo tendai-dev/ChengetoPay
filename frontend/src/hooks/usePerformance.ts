@@ -9,7 +9,7 @@ export function useVirtualScroll<T>(
   itemHeight: number,
   containerHeight: number
 ) {
-  const [scrollTop, setScrollTop] = useRef(0)
+  const scrollTop = useRef(0)
   const startIndex = Math.floor(scrollTop.current / itemHeight)
   const endIndex = Math.min(
     startIndex + Math.ceil(containerHeight / itemHeight) + 1,
@@ -21,7 +21,7 @@ export function useVirtualScroll<T>(
   const offsetY = startIndex * itemHeight
 
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    setScrollTop.current = e.currentTarget.scrollTop
+    scrollTop.current = e.currentTarget.scrollTop
   }, [])
 
   return {
@@ -114,16 +114,16 @@ export function useOptimizedImage(
     return `/_next/image?url=${encodeURIComponent(src)}&${params.toString()}`
   }, [src, options])
 
-  const [isLoading, setIsLoading] = useRef(true)
-  const [error, setError] = useRef<Error | null>(null)
+  const isLoading = useRef(true)
+  const error = useRef<Error | null>(null)
 
   const handleLoad = useCallback(() => {
-    setIsLoading.current = false
+    isLoading.current = false
   }, [])
 
   const handleError = useCallback((e: Error) => {
-    setIsLoading.current = false
-    setError.current = e
+    isLoading.current = false
+    error.current = e
   }, [])
 
   return {
@@ -157,14 +157,14 @@ export function usePerformanceMonitor(componentName: string) {
         })
       }
 
-      // Send to analytics
-      if (typeof window !== 'undefined' && window.gtag) {
-        window.gtag('event', 'performance', {
-          component: componentName,
-          renders: renderCount.current,
-          lifetime: totalLifetime,
-        })
-      }
+      // Send to analytics (commented out for now)
+      // if (typeof window !== 'undefined' && (window as any).gtag) {
+      //   (window as any).gtag('event', 'performance', {
+      //     component: componentName,
+      //     renders: renderCount.current,
+      //     lifetime: totalLifetime,
+      //   })
+      // }
     }
   }, [componentName])
 

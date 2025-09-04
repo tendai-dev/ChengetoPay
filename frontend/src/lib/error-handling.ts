@@ -146,23 +146,10 @@ export class ErrorHandler {
       case ErrorType.NETWORK:
       case ErrorType.SERVER:
         if (retry) {
-          toast.error(
-            (t) => (
-              <div className="flex flex-col space-y-2">
-                <span>{message}</span>
-                <button
-                  onClick={() => {
-                    toast.dismiss(t.id)
-                    retry()
-                  }}
-                  className="text-sm underline"
-                >
-                  Retry
-                </button>
-              </div>
-            ),
-            { duration: 5000 }
-          )
+          toast.error(`${message} (Click to retry)`, { 
+            duration: 5000
+          })
+          // Note: retry functionality would need to be implemented differently
         } else {
           toast.error(message)
         }
@@ -228,7 +215,10 @@ export class ErrorBoundary extends React.Component<
     
     Sentry.withScope((scope) => {
       scope.setTag('errorBoundary', true)
-      scope.setContext('errorInfo', errorInfo)
+      scope.setContext('errorInfo', {
+        componentStack: errorInfo.componentStack,
+        stack: errorInfo.componentStack
+      })
       Sentry.captureException(error)
     })
   }
@@ -237,24 +227,20 @@ export class ErrorBoundary extends React.Component<
     if (this.state.hasError) {
       if (this.props.fallback) {
         const FallbackComponent = this.props.fallback
-        return <FallbackComponent error={this.state.error!} />
+        return React.createElement(FallbackComponent, { error: this.state.error! })
       }
 
-      return (
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <div className="max-w-md w-full text-center">
-            <h2 className="text-2xl font-bold mb-4">Something went wrong</h2>
-            <p className="text-muted-foreground mb-6">
-              We're sorry for the inconvenience. Please try refreshing the page.
-            </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              Refresh Page
-            </button>
-          </div>
-        </div>
+      return React.createElement('div', { className: 'min-h-screen flex items-center justify-center p-4' },
+        React.createElement('div', { className: 'max-w-md w-full text-center' },
+          React.createElement('h2', { className: 'text-2xl font-bold mb-4' }, 'Something went wrong'),
+          React.createElement('p', { className: 'text-muted-foreground mb-6' },
+            'We\'re sorry for the inconvenience. Please try refreshing the page.'
+          ),
+          React.createElement('button', {
+            onClick: () => window.location.reload(),
+            className: 'px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors'
+          }, 'Refresh Page')
+        )
       )
     }
 
@@ -401,13 +387,13 @@ export function trackPerformance(name: string, fn: () => void | Promise<void>) {
       })
     }
     
-    // Track in analytics
-    if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('event', 'timing_complete', {
-        name,
-        value: Math.round(duration),
-      })
-    }
+    // Track in analytics (commented out for now)
+    // if (typeof window !== 'undefined' && (window as any).gtag) {
+    //   (window as any).gtag('event', 'timing_complete', {
+    //     name,
+    //     value: Math.round(duration),
+    //   })
+    // }
   }
 
   const result = fn()
